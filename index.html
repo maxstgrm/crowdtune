@@ -1,0 +1,1444 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover, user-scalable=no" />
+  <meta name="theme-color" content="#0a0a0f" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Crowdtune" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icon.svg" />
+  <link rel="icon" type="image/svg+xml" href="icon.svg" />
+  <title>Crowdtune – Der perfekte Mix für jede Crew</title>
+  <style>
+    /* --------- Reset & Base --------- */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #0a0a0f;
+      color: #fff;
+      font-size: 16px;
+      line-height: 1.4;
+      -webkit-font-smoothing: antialiased;
+      user-select: none;
+      -webkit-user-select: none;
+      overscroll-behavior: none;
+    }
+    button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+    input, textarea { font: inherit; color: inherit; background: none; border: none; outline: none; }
+    img { display: block; max-width: 100%; }
+
+    /* --------- App Shell --------- */
+    #app {
+      position: fixed;
+      inset: 0;
+      max-width: 520px;
+      margin: 0 auto;
+      background: #0a0a0f;
+      overflow: hidden;
+      box-shadow: 0 0 80px rgba(0,0,0,.5);
+    }
+    .screen {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      padding: env(safe-area-inset-top, 0) 0 env(safe-area-inset-bottom, 0) 0;
+      background: #0a0a0f;
+      z-index: 1;
+      transform: translateX(100%);
+      transition: transform .38s cubic-bezier(.32,.72,.35,1), opacity .3s ease;
+      opacity: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .screen.active { transform: translateX(0); opacity: 1; pointer-events: auto; z-index: 2; }
+    .screen.past { transform: translateX(-22%); opacity: 0; z-index: 0; }
+    .screen.modal { transform: translateY(100%); z-index: 3; }
+    .screen.modal.active { transform: translateY(0); z-index: 4; }
+
+    /* --------- Typography --------- */
+    h1, h2, h3 { letter-spacing: -0.02em; font-weight: 700; }
+    h1 { font-size: 34px; line-height: 1.1; }
+    h2 { font-size: 24px; line-height: 1.15; }
+    h3 { font-size: 18px; }
+    .muted { color: rgba(255,255,255,.55); }
+    .micro { font-size: 12px; letter-spacing: .04em; text-transform: uppercase; color: rgba(255,255,255,.45); font-weight: 600; }
+
+    /* --------- Welcome Screen --------- */
+    #screen-welcome {
+      background: radial-gradient(circle at 20% 10%, #6366f1 0%, transparent 45%),
+                  radial-gradient(circle at 90% 20%, #8a2be2 0%, transparent 50%),
+                  radial-gradient(circle at 50% 100%, #3b82f6 0%, transparent 55%),
+                  #0a0a0f;
+      padding: 0 24px;
+      justify-content: space-between;
+    }
+    .welcome-hero {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding-top: 60px;
+    }
+    .logo-mark {
+      width: 92px; height: 92px;
+      border-radius: 26px;
+      background: linear-gradient(135deg, #fff 0%, #c4b5fd 100%);
+      display: grid; place-items: center;
+      margin-bottom: 28px;
+      box-shadow: 0 20px 60px rgba(99,102,241,.35);
+      position: relative;
+      overflow: hidden;
+    }
+    .logo-mark::before {
+      content: "";
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,.9) 0%, rgba(255,255,255,0) 50%);
+      mix-blend-mode: overlay;
+    }
+    .logo-mark svg { width: 52px; height: 52px; }
+    .brand-title {
+      font-size: 42px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 10px;
+      background: linear-gradient(180deg, #fff 0%, #c4b5fd 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .tagline {
+      font-size: 18px;
+      color: rgba(255,255,255,.72);
+      max-width: 320px;
+      margin: 0 auto;
+      line-height: 1.35;
+    }
+    .auth-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 20px 0 36px;
+    }
+    .btn {
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      height: 54px;
+      border-radius: 16px;
+      font-size: 16px;
+      font-weight: 600;
+      transition: transform .15s ease, opacity .2s ease, background .2s ease;
+      position: relative;
+    }
+    .btn:active { transform: scale(.97); opacity: .85; }
+    .btn-apple { background: #fff; color: #000; }
+    .btn-spotify { background: #1DB954; color: #fff; }
+    .btn-google { background: rgba(255,255,255,.1); color: #fff; border: 1px solid rgba(255,255,255,.18); backdrop-filter: blur(10px); }
+    .btn-primary { background: #fff; color: #000; }
+    .btn-primary-gradient {
+      background: linear-gradient(135deg, #6366f1 0%, #8a2be2 100%);
+      color: #fff;
+      box-shadow: 0 12px 30px rgba(99,102,241,.4);
+    }
+    .btn-ghost { background: rgba(255,255,255,.08); color: #fff; border: 1px solid rgba(255,255,255,.12); }
+    .btn[disabled] { opacity: .35; pointer-events: none; }
+    .legal-note { font-size: 11px; text-align: center; color: rgba(255,255,255,.4); padding-bottom: 16px; }
+    .legal-note a { color: rgba(255,255,255,.7); text-decoration: underline; }
+
+    /* --------- Header / Nav --------- */
+    .app-header {
+      padding: 20px 20px 8px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .app-header .greeting { display: flex; align-items: baseline; gap: 6px; }
+    .app-header .greeting .hi { font-size: 16px; color: rgba(255,255,255,.55); font-weight: 500; }
+    .app-header .greeting .name { font-size: 17px; font-weight: 700; letter-spacing: -.01em; }
+    .avatar {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #3b82f6, #6366f1);
+      display: grid; place-items: center;
+      font-weight: 700; font-size: 15px;
+      color: #fff;
+      flex-shrink: 0;
+    }
+    .back-btn {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.08);
+      display: grid; place-items: center;
+      color: #fff; font-size: 18px;
+    }
+    .nav-bar { padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; }
+
+    /* --------- Content Scroll --------- */
+    .scroll {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 0 20px 120px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* --------- Cards --------- */
+    .big-cta {
+      margin: 10px 0 28px;
+      padding: 28px 24px;
+      border-radius: 26px;
+      background: linear-gradient(135deg, #6366f1 0%, #8a2be2 70%, #5d5cde 100%);
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 20px 50px rgba(138,43,226,.3);
+      cursor: pointer;
+      transition: transform .2s ease;
+    }
+    .big-cta:active { transform: scale(.98); }
+    .big-cta::before {
+      content: "";
+      position: absolute; right: -40px; top: -40px; width: 180px; height: 180px;
+      background: radial-gradient(circle, rgba(255,255,255,.3) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .big-cta .label { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; opacity: .8; margin-bottom: 6px; }
+    .big-cta .title { font-size: 26px; font-weight: 700; letter-spacing: -.02em; line-height: 1.15; margin-bottom: 14px; max-width: 75%; }
+    .big-cta .arrow {
+      position: absolute; right: 22px; bottom: 22px;
+      width: 44px; height: 44px; border-radius: 50%;
+      background: rgba(255,255,255,.22);
+      backdrop-filter: blur(10px);
+      display: grid; place-items: center;
+      font-size: 20px;
+    }
+
+    .section-title {
+      display: flex; align-items: baseline; justify-content: space-between;
+      margin: 24px 2px 12px;
+    }
+    .section-title h2 { font-size: 20px; font-weight: 700; }
+    .section-title a { font-size: 14px; color: #a78bfa; font-weight: 500; text-decoration: none; }
+
+    .party-card {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px;
+      background: rgba(255,255,255,.06);
+      border-radius: 18px;
+      margin-bottom: 10px;
+      transition: background .2s ease, transform .15s ease;
+    }
+    .party-card:active { transform: scale(.98); background: rgba(255,255,255,.1); }
+    .party-art {
+      width: 56px; height: 56px;
+      border-radius: 14px;
+      flex-shrink: 0;
+      display: grid; place-items: center;
+      font-size: 26px;
+    }
+    .party-info { flex: 1; min-width: 0; }
+    .party-info .name { font-weight: 600; font-size: 15px; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .party-info .meta { font-size: 13px; color: rgba(255,255,255,.5); }
+    .chevron { color: rgba(255,255,255,.3); font-size: 20px; }
+
+    /* --------- Join Code Row --------- */
+    .join-row {
+      display: flex; gap: 10px; margin-bottom: 4px;
+    }
+    .join-row input {
+      flex: 1;
+      height: 52px;
+      background: rgba(255,255,255,.06);
+      border-radius: 14px;
+      padding: 0 18px;
+      font-size: 16px;
+      letter-spacing: .12em;
+      font-weight: 600;
+      text-transform: uppercase;
+      border: 1px solid rgba(255,255,255,.08);
+    }
+    .join-row input::placeholder { letter-spacing: normal; text-transform: none; font-weight: 500; color: rgba(255,255,255,.4); }
+    .join-row .btn { width: 52px; height: 52px; padding: 0; border-radius: 14px; font-size: 20px; flex-shrink: 0; }
+    .join-row .join-qr svg { width: 22px; height: 22px; }
+    .join-hint { font-size: 12px; color: rgba(255,255,255,.45); margin-top: 8px; padding-left: 4px; }
+    .join-hint a { color: #a78bfa; text-decoration: none; font-weight: 500; }
+
+    /* --------- Tab Bar --------- */
+    #tab-bar {
+      position: absolute; left: 0; right: 0; bottom: 0;
+      padding: 10px 16px calc(env(safe-area-inset-bottom, 0) + 10px);
+      background: rgba(10,10,15,.75);
+      backdrop-filter: blur(22px) saturate(1.6);
+      -webkit-backdrop-filter: blur(22px) saturate(1.6);
+      border-top: 1px solid rgba(255,255,255,.08);
+      display: flex; justify-content: space-around;
+      z-index: 20;
+      transition: transform .3s ease;
+    }
+    #tab-bar.hidden { transform: translateY(100%); }
+    #tab-bar button {
+      flex: 1;
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+      padding: 6px;
+      color: rgba(255,255,255,.5);
+      font-size: 11px;
+      font-weight: 600;
+    }
+    #tab-bar button svg { width: 24px; height: 24px; }
+    #tab-bar button.active { color: #a78bfa; }
+
+    /* --------- Create Party (Modal) --------- */
+    .sheet-handle {
+      width: 40px; height: 5px;
+      background: rgba(255,255,255,.25);
+      border-radius: 3px;
+      margin: 10px auto 6px;
+    }
+    .sheet-title { padding: 10px 24px 18px; font-size: 24px; font-weight: 700; letter-spacing: -.02em; }
+    .form-group { padding: 0 24px; margin-bottom: 18px; }
+    .form-group label { display: block; font-size: 13px; color: rgba(255,255,255,.55); margin-bottom: 8px; font-weight: 500; }
+    .form-input {
+      width: 100%;
+      height: 52px;
+      background: rgba(255,255,255,.06);
+      border-radius: 14px;
+      padding: 0 16px;
+      font-size: 16px;
+      border: 1px solid rgba(255,255,255,.08);
+    }
+    .form-input::placeholder { color: rgba(255,255,255,.35); }
+    .emoji-picker { display: flex; gap: 10px; flex-wrap: wrap; }
+    .emoji-picker button {
+      width: 52px; height: 52px;
+      border-radius: 14px;
+      background: rgba(255,255,255,.06);
+      font-size: 26px;
+      border: 2px solid transparent;
+      transition: background .15s ease, border-color .15s ease, transform .15s ease;
+    }
+    .emoji-picker button.selected { border-color: #6366f1; background: rgba(99,102,241,.15); }
+    .emoji-picker button:active { transform: scale(.9); }
+
+    /* Mood picker: pill buttons (emoji + text) */
+    .mood-picker { display: flex; gap: 8px; flex-wrap: wrap; }
+    .mood-picker button {
+      display: inline-flex; align-items: center; gap: 6px;
+      height: 42px;
+      padding: 0 16px;
+      border-radius: 21px;
+      background: rgba(255,255,255,.06);
+      font-size: 14px;
+      font-weight: 500;
+      border: 1.5px solid transparent;
+      transition: background .15s ease, border-color .15s ease, transform .15s ease;
+    }
+    .mood-picker button .e { font-size: 18px; line-height: 1; }
+    .mood-picker button.selected { border-color: #6366f1; background: rgba(99,102,241,.15); color: #c4b5fd; }
+    .mood-picker button:active { transform: scale(.95); }
+
+    .sheet-footer {
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      padding: 30px 24px calc(env(safe-area-inset-bottom, 0) + 20px);
+      background: linear-gradient(180deg, rgba(10,10,15,0) 0%, rgba(10,10,15,.95) 30%, #0a0a0f 100%);
+      z-index: 5;
+    }
+
+    /* --------- Party Lobby --------- */
+    .party-hero {
+      padding: 0 24px 16px;
+      text-align: center;
+    }
+    .party-hero .emoji-big { font-size: 64px; margin: 8px 0 10px; }
+    .party-hero h1 { font-size: 28px; margin-bottom: 4px; }
+    .party-hero .party-meta { color: rgba(255,255,255,.55); font-size: 14px; }
+    .qr-card {
+      margin: 18px 24px;
+      padding: 22px;
+      background: #fff;
+      border-radius: 24px;
+      display: flex; flex-direction: column; align-items: center; gap: 14px;
+      box-shadow: 0 16px 40px rgba(0,0,0,.3);
+    }
+    .qr-card svg { width: 180px; height: 180px; }
+    .party-code {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: #f5f5f7;
+      color: #1a1a1f;
+      padding: 8px 14px;
+      border-radius: 12px;
+      font-weight: 700;
+      letter-spacing: .18em;
+      font-size: 15px;
+    }
+    .party-code .copy { color: #6366f1; font-size: 13px; }
+    .guest-section { padding: 0 24px; }
+    .guest-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .guest {
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      opacity: 0;
+      transform: translateY(8px) scale(.9);
+      animation: guestIn .5s cubic-bezier(.34,1.56,.64,1) forwards;
+    }
+    @keyframes guestIn {
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .guest .avatar { width: 56px; height: 56px; font-size: 22px; }
+    .guest .avatar.host { box-shadow: 0 0 0 3px #6366f1, 0 0 0 5px rgba(99,102,241,.3); }
+    .guest .name { font-size: 12px; color: rgba(255,255,255,.7); font-weight: 500; text-align: center; }
+    .guest.host .name::after { content: " · Host"; color: #a78bfa; font-weight: 600; }
+    .guest .svc { font-size: 10px; color: rgba(255,255,255,.4); }
+
+    .floating-action {
+      position: absolute;
+      left: 0; right: 0;
+      bottom: calc(env(safe-area-inset-bottom, 0) + 20px);
+      padding: 40px 24px 0;
+      background: linear-gradient(180deg, rgba(10,10,15,0) 0%, rgba(10,10,15,.9) 50%, #0a0a0f 100%);
+      z-index: 15;
+      display: flex; justify-content: center;
+    }
+    .floating-action .btn {
+      width: 100%;
+      max-width: 360px;
+      height: 62px;
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: -.01em;
+      border-radius: 18px;
+      box-shadow: 0 16px 40px rgba(99,102,241,.55), 0 4px 12px rgba(139,92,246,.4);
+      display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+    }
+    .floating-action .btn svg { width: 22px; height: 22px; }
+
+    /* --------- Generating screen --------- */
+    #screen-generating {
+      background: radial-gradient(circle at 50% 40%, #8a2be2 0%, transparent 45%),
+                  radial-gradient(circle at 50% 80%, #6366f1 0%, transparent 50%),
+                  #0a0a0f;
+      align-items: center; justify-content: center;
+      padding: 40px 24px;
+      text-align: center;
+    }
+    .pulse-ring {
+      width: 180px; height: 180px;
+      border-radius: 50%;
+      display: grid; place-items: center;
+      margin: 0 auto 40px;
+      position: relative;
+    }
+    .pulse-ring::before, .pulse-ring::after {
+      content: "";
+      position: absolute; inset: 0;
+      border-radius: 50%;
+      border: 2px solid rgba(99,102,241,.6);
+      animation: pulse 1.8s ease-out infinite;
+    }
+    .pulse-ring::after { animation-delay: .9s; }
+    @keyframes pulse {
+      0% { transform: scale(.5); opacity: 1; }
+      100% { transform: scale(1.4); opacity: 0; }
+    }
+    .pulse-core {
+      width: 110px; height: 110px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #6366f1, #8a2be2);
+      display: grid; place-items: center;
+      font-size: 48px;
+      box-shadow: 0 20px 50px rgba(99,102,241,.4);
+    }
+    .gen-title { font-size: 26px; font-weight: 700; margin-bottom: 8px; letter-spacing: -.02em; }
+    .gen-sub { font-size: 15px; color: rgba(255,255,255,.7); margin-bottom: 28px; max-width: 320px; }
+    .gen-stats {
+      display: flex; gap: 24px;
+      background: rgba(255,255,255,.06);
+      padding: 14px 22px;
+      border-radius: 18px;
+      backdrop-filter: blur(16px);
+    }
+    .gen-stat .v { font-size: 22px; font-weight: 700; }
+    .gen-stat .k { font-size: 11px; color: rgba(255,255,255,.55); letter-spacing: .05em; text-transform: uppercase; }
+    .gen-steps { margin-top: 30px; display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: rgba(255,255,255,.55); }
+    .gen-steps li { list-style: none; display: flex; align-items: center; gap: 10px; opacity: .4; transition: opacity .4s ease, color .4s ease; }
+    .gen-steps li.done { opacity: 1; color: #4ade80; }
+    .gen-steps li.active { opacity: 1; color: #fff; }
+    .gen-steps li .dot {
+      width: 14px; height: 14px; border-radius: 50%;
+      background: rgba(255,255,255,.15);
+      display: inline-grid; place-items: center;
+      font-size: 10px;
+    }
+    .gen-steps li.done .dot { background: #4ade80; color: #0a0a0f; }
+    .gen-steps li.active .dot { background: #fff; color: #0a0a0f; animation: blink 1.2s infinite; }
+    @keyframes blink { 50% { opacity: .4; } }
+
+    /* --------- Result Screen --------- */
+    .mix-hero {
+      position: relative;
+      padding: 40px 24px 26px;
+      text-align: center;
+      overflow: hidden;
+    }
+    .mix-hero::before {
+      content: "";
+      position: absolute; inset: 0;
+      background: radial-gradient(circle at 30% 20%, #6366f1 0%, transparent 50%),
+                  radial-gradient(circle at 80% 60%, #8a2be2 0%, transparent 55%);
+      opacity: .9;
+      z-index: -1;
+    }
+    .mix-cover {
+      width: 180px; height: 180px;
+      border-radius: 22px;
+      margin: 10px auto 22px;
+      background: linear-gradient(135deg, #3b82f6, #6366f1 40%, #8a2be2 80%, #5d5cde);
+      display: grid; place-items: center;
+      font-size: 72px;
+      box-shadow: 0 24px 60px rgba(0,0,0,.5);
+      position: relative;
+      overflow: hidden;
+    }
+    .mix-cover::after {
+      content: "";
+      position: absolute; inset: 0;
+      background: linear-gradient(180deg, rgba(255,255,255,.2), transparent 50%);
+    }
+    .mix-hero h1 { font-size: 28px; margin-bottom: 6px; }
+    .mix-hero .mix-meta { color: rgba(255,255,255,.65); font-size: 14px; margin-bottom: 18px; }
+    .contributor-row {
+      display: flex; justify-content: center; gap: -6px; margin-bottom: 20px;
+    }
+    .contributor-row .avatar {
+      width: 36px; height: 36px; font-size: 14px;
+      border: 2px solid #0a0a0f;
+      margin-left: -8px;
+    }
+    .contributor-row .avatar:first-child { margin-left: 0; }
+    .mix-actions { display: flex; gap: 10px; padding: 0 24px 10px; }
+    .mix-actions .btn { flex: 1; height: 48px; font-size: 14px; }
+
+    .track-list { padding: 10px 12px 20px; }
+    .track {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      transition: background .15s ease;
+    }
+    .track:active { background: rgba(255,255,255,.08); }
+    .track .rank { width: 22px; text-align: center; color: rgba(255,255,255,.4); font-size: 14px; font-weight: 600; }
+    .track-art {
+      width: 48px; height: 48px; border-radius: 10px;
+      flex-shrink: 0;
+      display: grid; place-items: center;
+      font-size: 20px;
+      background: rgba(255,255,255,.08);
+    }
+    .track-info { flex: 1; min-width: 0; }
+    .track-info .t { font-size: 15px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .track-info .a { font-size: 13px; color: rgba(255,255,255,.5); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .track-match {
+      display: flex; align-items: center; gap: 2px;
+    }
+    .track-match .avatar {
+      width: 22px; height: 22px; font-size: 10px;
+      border: 2px solid #0a0a0f;
+      margin-left: -6px;
+    }
+    .track-match .avatar:first-child { margin-left: 0; }
+    .match-pct {
+      margin-left: 8px;
+      font-size: 12px; font-weight: 700;
+      color: #4ade80;
+    }
+
+    /* --------- QR Scanner --------- */
+    #screen-qr { background: #000; }
+    .qr-scanner {
+      flex: 1;
+      position: relative;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      overflow: hidden;
+      background: #000;
+    }
+    .qr-video-mock {
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse at 30% 30%, rgba(99,102,241,.25) 0%, transparent 60%),
+        radial-gradient(ellipse at 70% 70%, rgba(139,92,246,.2) 0%, transparent 60%),
+        #111;
+      filter: blur(1px);
+    }
+    .qr-video-mock::before, .qr-video-mock::after {
+      content: ""; position: absolute; background: rgba(255,255,255,.05);
+    }
+    .qr-frame {
+      position: relative;
+      width: 240px; height: 240px;
+      z-index: 2;
+    }
+    .qr-frame::before, .qr-frame::after,
+    .qr-frame > span::before, .qr-frame > span::after {
+      content: ""; position: absolute; width: 40px; height: 40px;
+      border-color: #fff; border-style: solid; border-width: 0;
+    }
+    .qr-frame::before { top: 0; left: 0; border-top-width: 4px; border-left-width: 4px; border-top-left-radius: 12px; }
+    .qr-frame::after { top: 0; right: 0; border-top-width: 4px; border-right-width: 4px; border-top-right-radius: 12px; }
+    .qr-frame > span { position: absolute; inset: 0; display: block; }
+    .qr-frame > span::before { bottom: 0; left: 0; border-bottom-width: 4px; border-left-width: 4px; border-bottom-left-radius: 12px; }
+    .qr-frame > span::after { bottom: 0; right: 0; border-bottom-width: 4px; border-right-width: 4px; border-bottom-right-radius: 12px; }
+    .qr-scan-line {
+      position: absolute; left: 10%; right: 10%; top: 10%;
+      height: 2px; background: linear-gradient(90deg, transparent, #a78bfa 50%, transparent);
+      box-shadow: 0 0 12px #a78bfa;
+      animation: scanMove 2.2s ease-in-out infinite alternate;
+      z-index: 3;
+    }
+    @keyframes scanMove {
+      from { transform: translateY(0); }
+      to   { transform: translateY(220px); }
+    }
+    .qr-hint {
+      position: absolute; left: 24px; right: 24px; bottom: calc(env(safe-area-inset-bottom, 0) + 30px);
+      text-align: center; color: rgba(255,255,255,.85); font-size: 15px;
+      z-index: 5;
+    }
+    .qr-hint .sub { font-size: 13px; color: rgba(255,255,255,.55); margin-top: 6px; }
+    .qr-close {
+      position: absolute; top: calc(env(safe-area-inset-top, 0) + 16px); left: 16px;
+      z-index: 10;
+    }
+
+    /* --------- Events --------- */
+    .event-card {
+      position: relative;
+      padding: 0;
+      border-radius: 22px;
+      overflow: hidden;
+      margin-bottom: 14px;
+      background: #181826;
+      transition: transform .15s ease;
+    }
+    .event-card:active { transform: scale(.98); }
+    .event-banner {
+      height: 120px;
+      position: relative;
+      display: flex; align-items: flex-end;
+      padding: 14px;
+    }
+    .event-banner::after {
+      content: ""; position: absolute; inset: 0;
+      background: linear-gradient(180deg, transparent 40%, rgba(0,0,0,.55) 100%);
+    }
+    .event-badge {
+      position: absolute; top: 12px; left: 12px;
+      background: rgba(0,0,0,.5); backdrop-filter: blur(10px);
+      padding: 4px 10px; border-radius: 999px;
+      font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+      z-index: 2;
+    }
+    .event-badge.live { background: rgba(239,68,68,.9); }
+    .event-badge.live::before { content: "● "; animation: blink 1.2s infinite; }
+    .event-body { padding: 14px 16px 16px; }
+    .event-title { font-size: 17px; font-weight: 700; letter-spacing: -.01em; margin-bottom: 4px; }
+    .event-meta { font-size: 13px; color: rgba(255,255,255,.6); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .event-meta .dot { width: 3px; height: 3px; border-radius: 50%; background: rgba(255,255,255,.4); }
+    .event-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; }
+    .event-attendees { display: flex; align-items: center; font-size: 13px; color: rgba(255,255,255,.7); }
+    .event-attendees .avatar { width: 22px; height: 22px; font-size: 10px; border: 2px solid #181826; margin-left: -6px; }
+    .event-attendees .avatar:first-child { margin-left: 0; }
+    .event-attendees .count { margin-left: 8px; }
+    .event-join {
+      height: 34px; padding: 0 16px; border-radius: 17px;
+      background: rgba(255,255,255,.12); color: #fff;
+      font-size: 13px; font-weight: 600;
+    }
+    .event-join.primary { background: #fff; color: #000; }
+
+    .events-header { padding: 20px 20px 8px; }
+    .events-tabs {
+      display: flex; gap: 6px;
+      background: rgba(255,255,255,.06);
+      padding: 4px; border-radius: 14px; margin: 0 20px 16px;
+    }
+    .events-tabs button {
+      flex: 1; height: 36px;
+      border-radius: 10px;
+      font-size: 13px; font-weight: 600;
+      color: rgba(255,255,255,.6);
+      transition: background .2s ease, color .2s ease;
+    }
+    .events-tabs button.active { background: rgba(255,255,255,.12); color: #fff; }
+
+    /* --------- Result scroll header --------- */
+    .result-header {
+      padding: 14px 18px;
+      display: flex; justify-content: space-between; align-items: center;
+      position: sticky; top: 0; z-index: 5;
+      background: linear-gradient(180deg, rgba(10,10,15,.85), rgba(10,10,15,0));
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+
+    /* --------- Toast --------- */
+    .toast {
+      position: absolute;
+      bottom: calc(env(safe-area-inset-bottom, 0) + 90px);
+      left: 50%; transform: translateX(-50%) translateY(20px);
+      background: rgba(255,255,255,.14);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 14px;
+      font-size: 13px;
+      font-weight: 500;
+      border: 1px solid rgba(255,255,255,.12);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .3s ease, transform .3s ease;
+      z-index: 30;
+      white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* --------- Utilities --------- */
+    .row { display: flex; align-items: center; gap: 10px; }
+    .spacer { flex: 1; }
+    .px-24 { padding-left: 24px; padding-right: 24px; }
+
+    /* --------- Desktop frame hint --------- */
+    @media (min-width: 540px) {
+      body { background: #000; display: grid; place-items: center; }
+      #app { height: min(920px, 96vh); border-radius: 44px; border: 10px solid #1a1a1f; overflow: hidden; }
+      .screen { border-radius: 32px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+
+    <!-- =================== WELCOME / LOGIN =================== -->
+    <section id="screen-welcome" class="screen active">
+      <div class="welcome-hero">
+        <div class="logo-mark">
+          <svg viewBox="0 0 52 52" fill="none">
+            <path d="M10 34V18C10 16.8954 10.8954 16 12 16H14V36H12C10.8954 36 10 35.1046 10 34Z" fill="#6366f1"/>
+            <path d="M18 40V12C18 10.8954 18.8954 10 20 10H22V42H20C18.8954 42 18 41.1046 18 40Z" fill="#8a2be2"/>
+            <path d="M26 34V18C26 16.8954 26.8954 16 28 16H30V36H28C26.8954 36 26 35.1046 26 34Z" fill="#3b82f6"/>
+            <path d="M34 38V14C34 12.8954 34.8954 12 36 12H38V40H36C34.8954 40 34 39.1046 34 38Z" fill="#5d5cde"/>
+            <path d="M42 32V20C42 18.8954 42.8954 18 44 18V34C42.8954 34 42 33.1046 42 32Z" fill="#6366f1"/>
+          </svg>
+        </div>
+        <h1 class="brand-title">Crowdtune</h1>
+        <p class="tagline">Der perfekte Mix für jede Crew. Basierend auf den Lieblingssongs aller Anwesenden.</p>
+      </div>
+      <div class="auth-buttons">
+        <button class="btn btn-apple" onclick="demoLogin('apple')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
+          Mit Apple fortfahren
+        </button>
+        <button class="btn btn-spotify" onclick="demoLogin('spotify')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+          Mit Spotify fortfahren
+        </button>
+        <button class="btn btn-google" onclick="demoLogin('google')">
+          <svg width="18" height="18" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+          Mit Google fortfahren
+        </button>
+      </div>
+      <p class="legal-note">Mit der Anmeldung stimmst du unseren <a href="#">AGB</a> und <a href="#">Datenschutzbestimmungen</a> zu.</p>
+    </section>
+
+    <!-- =================== HOME =================== -->
+    <section id="screen-home" class="screen">
+      <header class="app-header">
+        <div class="greeting">
+          <span class="hi">Hallo,</span>
+          <span class="name" id="user-name">Max</span>
+        </div>
+        <div class="avatar" id="user-avatar">M</div>
+      </header>
+      <div class="scroll">
+        <div class="big-cta" onclick="openSheet('create-party')">
+          <div class="label">Los geht's</div>
+          <div class="title">Neue Party starten</div>
+          <div class="muted" style="font-size: 14px; opacity: .85; max-width: 75%;">Erstelle einen Code, lade deine Crew ein und bekomme den perfekten Mix.</div>
+          <div class="arrow">→</div>
+        </div>
+
+        <div class="section-title">
+          <h2>Party beitreten</h2>
+        </div>
+        <div class="join-row">
+          <input type="text" id="join-input" placeholder="Party-Code eingeben" maxlength="6" autocapitalize="characters" />
+          <button class="btn btn-ghost join-qr" onclick="openQrScanner()" aria-label="QR-Code scannen">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM17 17h4v4h-4zM14 20h3"/></svg>
+          </button>
+          <button class="btn btn-primary-gradient join-go" onclick="joinParty()" aria-label="Beitreten">→</button>
+        </div>
+        <div class="join-hint">Code eingeben oder <a href="#" onclick="event.preventDefault(); openQrScanner()">QR-Code scannen</a></div>
+
+        <div class="section-title">
+          <h2>Deine Parties</h2>
+          <a href="#" onclick="event.preventDefault(); showToast('Alle Parties – coming soon')">Alle</a>
+        </div>
+        <div class="party-card" onclick="go('party-lobby')">
+          <div class="party-art" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">🎉</div>
+          <div class="party-info">
+            <div class="name">Emilys Geburtstag</div>
+            <div class="meta">Gestern · 8 Personen · 32 Songs</div>
+          </div>
+          <div class="chevron">›</div>
+        </div>
+        <div class="party-card" onclick="go('party-lobby')">
+          <div class="party-art" style="background: linear-gradient(135deg, #06b6d4, #3b82f6);">🏠</div>
+          <div class="party-info">
+            <div class="name">WG-Abend</div>
+            <div class="meta">Letzten Samstag · 5 Personen · 24 Songs</div>
+          </div>
+          <div class="chevron">›</div>
+        </div>
+        <div class="party-card" onclick="go('party-lobby')">
+          <div class="party-art" style="background: linear-gradient(135deg, #5d5cde, #8a2be2);">🏖️</div>
+          <div class="party-info">
+            <div class="name">Beach Session</div>
+            <div class="meta">15. April · 12 Personen · 48 Songs</div>
+          </div>
+          <div class="chevron">›</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================== CREATE PARTY (MODAL) =================== -->
+    <section id="screen-create-party" class="screen modal">
+      <div class="sheet-handle"></div>
+      <div class="nav-bar">
+        <button class="back-btn" onclick="closeSheet('create-party')">✕</button>
+        <div></div>
+      </div>
+      <div class="sheet-title">Neue Party erstellen</div>
+      <div class="scroll" style="padding-bottom: 140px;">
+        <div class="form-group">
+          <label>Party-Name</label>
+          <input type="text" class="form-input" id="new-party-name" placeholder="z.B. Saturday Night" />
+        </div>
+        <div class="form-group">
+          <label>Emoji wählen</label>
+          <div class="emoji-picker" id="emoji-picker">
+            <button data-emoji="🎉" class="selected">🎉</button>
+            <button data-emoji="🔥">🔥</button>
+            <button data-emoji="🏠">🏠</button>
+            <button data-emoji="🎂">🎂</button>
+            <button data-emoji="🏖️">🏖️</button>
+            <button data-emoji="🌙">🌙</button>
+            <button data-emoji="🍕">🍕</button>
+            <button data-emoji="🎧">🎧</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Ort (optional)</label>
+          <input type="text" class="form-input" placeholder="z.B. Bei Max" />
+        </div>
+        <div class="form-group">
+          <label>Mix-Stimmung</label>
+          <div class="mood-picker">
+            <button data-mood="Gemischt" class="selected"><span class="e">🎵</span> Gemischt</button>
+            <button data-mood="Tanzbar"><span class="e">💃</span> Tanzbar</button>
+            <button data-mood="Chill"><span class="e">☕</span> Chill</button>
+            <button data-mood="Rock"><span class="e">🎸</span> Rock</button>
+            <button data-mood="Hip-Hop"><span class="e">🎤</span> Hip-Hop</button>
+            <button data-mood="Elektro"><span class="e">🎛️</span> Elektro</button>
+          </div>
+        </div>
+      </div>
+      <div class="sheet-footer">
+        <button class="btn btn-primary-gradient" onclick="createParty()">Party erstellen</button>
+      </div>
+    </section>
+
+    <!-- =================== PARTY LOBBY =================== -->
+    <section id="screen-party-lobby" class="screen">
+      <div class="nav-bar">
+        <button class="back-btn" onclick="back()">‹</button>
+        <div class="micro">Party läuft</div>
+        <div style="width: 40px;"></div>
+      </div>
+      <div class="scroll" style="padding-bottom: 160px; padding-left: 0; padding-right: 0;">
+        <div class="party-hero">
+          <div class="emoji-big" id="party-emoji">🎉</div>
+          <h1 id="party-name">Saturday Night</h1>
+          <div class="party-meta">Heute · Bei Max</div>
+        </div>
+
+        <div class="qr-card">
+          <svg id="qr-code" viewBox="0 0 180 180" xmlns="http://www.w3.org/2000/svg"></svg>
+          <div class="party-code">
+            <span id="code-text">WAVE42</span>
+            <button class="copy" onclick="copyCode()">Kopieren</button>
+          </div>
+          <div style="color: #555; font-size: 13px;">Scanne den Code oder tippe ihn ein</div>
+        </div>
+
+        <div class="guest-section">
+          <div class="section-title">
+            <h2 id="guest-count-title">4 Personen</h2>
+            <a href="#" onclick="event.preventDefault(); addGuest()">+ Mehr einladen</a>
+          </div>
+          <div class="guest-grid" id="guest-grid">
+            <!-- populated by JS -->
+          </div>
+          <div style="margin-top: 24px; padding: 14px; background: rgba(255,255,255,.04); border-radius: 14px; font-size: 13px; color: rgba(255,255,255,.6); text-align: center;">
+            💡 Mindestens 2 Personen müssen ihre Musik verbunden haben.<br>Je mehr, desto besser der Mix.
+          </div>
+        </div>
+      </div>
+      <div class="floating-action">
+        <button class="btn btn-primary-gradient" onclick="startGenerating()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          Mix generieren
+        </button>
+      </div>
+    </section>
+
+    <!-- =================== GENERATING =================== -->
+    <section id="screen-generating" class="screen">
+      <div class="pulse-ring">
+        <div class="pulse-core">🎵</div>
+      </div>
+      <div class="gen-title" id="gen-title">Analysiere eure Musik...</div>
+      <div class="gen-sub" id="gen-sub">Wir schauen, was eure 4 Lieblingssongs gemeinsam haben</div>
+      <div class="gen-stats">
+        <div class="gen-stat">
+          <div class="v" id="stat-tracks">0</div>
+          <div class="k">Tracks</div>
+        </div>
+        <div class="gen-stat">
+          <div class="v" id="stat-artists">0</div>
+          <div class="k">Artists</div>
+        </div>
+        <div class="gen-stat">
+          <div class="v" id="stat-matches">0</div>
+          <div class="k">Matches</div>
+        </div>
+      </div>
+      <ul class="gen-steps" id="gen-steps">
+        <li data-step="1"><span class="dot">1</span> Lade Top-Tracks der Gäste...</li>
+        <li data-step="2"><span class="dot">2</span> Analysiere Genres & Vibes...</li>
+        <li data-step="3"><span class="dot">3</span> Finde Überschneidungen...</li>
+        <li data-step="4"><span class="dot">4</span> Erstelle euren perfekten Mix...</li>
+      </ul>
+    </section>
+
+    <!-- =================== RESULT =================== -->
+    <section id="screen-result" class="screen">
+      <div class="result-header">
+        <button class="back-btn" onclick="go('home')">‹</button>
+        <div class="micro">Euer Mix</div>
+        <button class="back-btn" onclick="showToast('Geteilt! 🎉')">↗</button>
+      </div>
+      <div class="scroll" style="padding: 0 0 120px;">
+        <div class="mix-hero">
+          <div class="mix-cover">🎧</div>
+          <h1>Saturday Night Mix</h1>
+          <div class="mix-meta">15 Songs · 52 Minuten · 4 Personen</div>
+          <div class="contributor-row" id="contributors"></div>
+          <div style="padding: 0 20px; max-width: 380px; margin: 0 auto;">
+            <div style="background: rgba(255,255,255,.08); backdrop-filter: blur(12px); padding: 10px 14px; border-radius: 12px; font-size: 13px; color: rgba(255,255,255,.85);">
+              ✨ Dieser Mix trifft bei allen Gästen mindestens 65% Geschmack
+            </div>
+          </div>
+        </div>
+
+        <div class="mix-actions">
+          <button class="btn btn-spotify" onclick="showToast('Öffne Spotify...')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+            Auf Spotify öffnen
+          </button>
+          <button class="btn btn-ghost" onclick="showToast('Link kopiert')">Teilen</button>
+        </div>
+
+        <div class="track-list" id="track-list"></div>
+
+        <div style="padding: 16px 24px 40px; color: rgba(255,255,255,.5); font-size: 13px; text-align: center;">
+          Algorithmus: Überlappung der Top-50 Tracks · gewichtet nach Platzierung und Genre-Ähnlichkeit
+        </div>
+      </div>
+    </section>
+
+    <!-- =================== QR SCANNER =================== -->
+    <section id="screen-qr" class="screen">
+      <div class="qr-close">
+        <button class="back-btn" onclick="closeQrScanner()">✕</button>
+      </div>
+      <div class="qr-scanner">
+        <div class="qr-video-mock"></div>
+        <div class="qr-frame"><span></span></div>
+        <div class="qr-scan-line"></div>
+        <div class="qr-hint">
+          <div>Richte die Kamera auf den QR-Code</div>
+          <div class="sub">Dein Gastgeber findet den Code in der Party-Lobby</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================== EVENTS =================== -->
+    <section id="screen-events" class="screen">
+      <header class="events-header">
+        <h1 style="font-size: 28px; letter-spacing: -.02em;">Events</h1>
+        <p class="muted" style="font-size: 14px; margin-top: 4px;">Offizielle Events in deiner Nähe</p>
+      </header>
+      <div class="events-tabs" id="events-tabs">
+        <button class="active" data-filter="nearby">In der Nähe</button>
+        <button data-filter="upcoming">Demnächst</button>
+        <button data-filter="live">Live</button>
+      </div>
+      <div class="scroll" id="events-list" style="padding: 0 20px 120px;">
+        <!-- populated by JS -->
+      </div>
+    </section>
+
+    <!-- =================== TAB BAR =================== -->
+    <nav id="tab-bar" class="hidden">
+      <button data-tab="home" onclick="go('home')" class="active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9M5 10v10h14V10"/></svg>
+        Home
+      </button>
+      <button data-tab="events" onclick="go('events')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+        Events
+      </button>
+      <button data-tab="profile" onclick="showToast('Profil – coming soon')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/></svg>
+        Profil
+      </button>
+    </nav>
+
+    <div class="toast" id="toast">Gespeichert</div>
+  </div>
+
+  <script>
+    // ============ App State ============
+    const state = {
+      user: { name: "Max", initials: "M", service: "spotify" },
+      screenStack: ["welcome"],
+      currentCode: "WAVE42",
+      guests: [],
+      partyName: "Saturday Night",
+      partyEmoji: "🎉",
+    };
+
+    const MOCK_GUESTS = [
+      { name: "Max", initials: "M", gradient: "linear-gradient(135deg,#6366f1,#8b5cf6)", host: true, svc: "Spotify" },
+      { name: "Emily", initials: "E", gradient: "linear-gradient(135deg,#8b5cf6,#8a2be2)", svc: "Apple Music" },
+      { name: "Jonas", initials: "J", gradient: "linear-gradient(135deg,#06b6d4,#3b82f6)", svc: "Spotify" },
+      { name: "Lea", initials: "L", gradient: "linear-gradient(135deg,#3b82f6,#6366f1)", svc: "Spotify" },
+    ];
+
+    const EXTRA_GUESTS = [
+      { name: "Tim", initials: "T", gradient: "linear-gradient(135deg,#7c3aed,#a78bfa)", svc: "Apple Music" },
+      { name: "Sarah", initials: "S", gradient: "linear-gradient(135deg,#0ea5e9,#6366f1)", svc: "Spotify" },
+    ];
+
+    const MOCK_TRACKS = [
+      { title: "Blinding Lights", artist: "The Weeknd", art: "🌃", gradient: "linear-gradient(135deg,#6366f1,#8a2be2)", match: [0,1,2,3], pct: 98 },
+      { title: "As It Was", artist: "Harry Styles", art: "💫", gradient: "linear-gradient(135deg,#8b5cf6,#6366f1)", match: [0,1,2], pct: 94 },
+      { title: "Heat Waves", artist: "Glass Animals", art: "🌊", gradient: "linear-gradient(135deg,#06b6d4,#3b82f6)", match: [0,2,3], pct: 91 },
+      { title: "Flowers", artist: "Miley Cyrus", art: "🌸", gradient: "linear-gradient(135deg,#a78bfa,#8b5cf6)", match: [1,2,3], pct: 88 },
+      { title: "Anti-Hero", artist: "Taylor Swift", art: "🦋", gradient: "linear-gradient(135deg,#818cf8,#a78bfa)", match: [0,1,3], pct: 86 },
+      { title: "Kill Bill", artist: "SZA", art: "⚔️", gradient: "linear-gradient(135deg,#4f46e5,#7c3aed)", match: [1,2,3], pct: 82 },
+      { title: "Unholy", artist: "Sam Smith, Kim Petras", art: "🔥", gradient: "linear-gradient(135deg,#7c3aed,#8a2be2)", match: [0,1,2], pct: 79 },
+      { title: "Stay", artist: "The Kid LAROI, Justin Bieber", art: "💔", gradient: "linear-gradient(135deg,#6366f1,#8b5cf6)", match: [0,2,3], pct: 77 },
+      { title: "About Damn Time", artist: "Lizzo", art: "✨", gradient: "linear-gradient(135deg,#3b82f6,#6366f1)", match: [1,3], pct: 74 },
+      { title: "Calm Down", artist: "Rema, Selena Gomez", art: "🌴", gradient: "linear-gradient(135deg,#06b6d4,#3b82f6)", match: [0,1,3], pct: 72 },
+      { title: "Unstoppable", artist: "Sia", art: "⚡", gradient: "linear-gradient(135deg,#6366f1,#4f46e5)", match: [0,1,2,3], pct: 71 },
+      { title: "Watermelon Sugar", artist: "Harry Styles", art: "🍉", gradient: "linear-gradient(135deg,#0ea5e9,#6366f1)", match: [0,2,3], pct: 68 },
+      { title: "Levitating", artist: "Dua Lipa", art: "🪐", gradient: "linear-gradient(135deg,#8b5cf6,#a78bfa)", match: [1,2,3], pct: 67 },
+      { title: "Dance Monkey", artist: "Tones and I", art: "🐵", gradient: "linear-gradient(135deg,#3b82f6,#8b5cf6)", match: [0,1,3], pct: 66 },
+      { title: "drivers license", artist: "Olivia Rodrigo", art: "🚗", gradient: "linear-gradient(135deg,#60a5fa,#a78bfa)", match: [0,1,2,3], pct: 65 },
+    ];
+
+    // ============ Navigation ============
+    function go(screen) {
+      const current = state.screenStack[state.screenStack.length - 1];
+      if (current === screen) return;
+      const currentEl = document.getElementById("screen-" + current);
+      const nextEl = document.getElementById("screen-" + screen);
+      if (currentEl) { currentEl.classList.remove("active"); currentEl.classList.add("past"); }
+      if (nextEl) { nextEl.classList.add("active"); nextEl.classList.remove("past"); }
+      state.screenStack.push(screen);
+      updateTabBar(screen);
+    }
+
+    function back() {
+      if (state.screenStack.length <= 1) return;
+      const current = state.screenStack.pop();
+      const prev = state.screenStack[state.screenStack.length - 1];
+      document.getElementById("screen-" + current).classList.remove("active");
+      const prevEl = document.getElementById("screen-" + prev);
+      prevEl.classList.remove("past");
+      prevEl.classList.add("active");
+      updateTabBar(prev);
+    }
+
+    function openSheet(screen) {
+      document.getElementById("screen-" + screen).classList.add("active");
+    }
+    function closeSheet(screen) {
+      document.getElementById("screen-" + screen).classList.remove("active");
+    }
+
+    function updateTabBar(screen) {
+      const tabBar = document.getElementById("tab-bar");
+      const tabScreens = ["home", "events"];
+      if (tabScreens.includes(screen)) tabBar.classList.remove("hidden");
+      else tabBar.classList.add("hidden");
+      tabBar.querySelectorAll("button[data-tab]").forEach(b => {
+        b.classList.toggle("active", b.dataset.tab === screen);
+      });
+    }
+
+    // ============ QR Scanner (mock) ============
+    function openQrScanner() {
+      go("qr");
+      // Simulate successful scan after 2.5s
+      clearTimeout(state._qrTimeout);
+      state._qrTimeout = setTimeout(() => {
+        if (document.getElementById("screen-qr").classList.contains("active")) {
+          const fakeCode = generateCode();
+          state.currentCode = fakeCode;
+          document.getElementById("code-text").textContent = fakeCode;
+          state.guests = MOCK_GUESTS.slice(0, 2);
+          showToast(`Party ${fakeCode} gefunden ✓`);
+          setTimeout(() => {
+            go("party-lobby");
+            renderGuests();
+            drawQR(state.currentCode);
+            setTimeout(() => addGuest(2), 1200);
+            setTimeout(() => addGuest(3), 2500);
+          }, 500);
+        }
+      }, 2500);
+    }
+
+    function closeQrScanner() {
+      clearTimeout(state._qrTimeout);
+      back();
+    }
+
+    // ============ Events ============
+    const MOCK_EVENTS = [
+      {
+        id: "e1", title: "Berlin Rooftop Sessions",
+        when: "Heute · 21:00", where: "Klunkerkranich, Berlin",
+        tag: "live", distance: "2.3 km",
+        gradient: "linear-gradient(135deg,#6366f1,#8a2be2 60%,#3b82f6)",
+        emoji: "🌆", attendees: 284, avatars: [0,1,2,3]
+      },
+      {
+        id: "e2", title: "Sunset Beach Party",
+        when: "Samstag · 19:30", where: "Müggelsee Strandbad",
+        tag: "upcoming", distance: "12 km",
+        gradient: "linear-gradient(135deg,#0ea5e9,#3b82f6 50%,#6366f1)",
+        emoji: "🏖️", attendees: 142, avatars: [1,2,3,0]
+      },
+      {
+        id: "e3", title: "Indie Night @ Lido",
+        when: "Fr, 24. April · 22:00", where: "Lido, Kreuzberg",
+        tag: "upcoming", distance: "4.1 km",
+        gradient: "linear-gradient(135deg,#7c3aed,#a78bfa 80%)",
+        emoji: "🎸", attendees: 67, avatars: [2,3,0]
+      },
+      {
+        id: "e4", title: "Techno Underground",
+        when: "Sa, 25. April · 23:00", where: "://about blank",
+        tag: "upcoming", distance: "6.8 km",
+        gradient: "linear-gradient(135deg,#1e1b4b,#4f46e5 70%,#8b5cf6)",
+        emoji: "🎛️", attendees: 512, avatars: [0,2,1,3]
+      },
+      {
+        id: "e5", title: "Sonntags-Brunch mit DJ",
+        when: "So, 26. April · 12:00", where: "House of Weekend",
+        tag: "upcoming", distance: "1.2 km",
+        gradient: "linear-gradient(135deg,#8b5cf6,#06b6d4 80%)",
+        emoji: "☀️", attendees: 89, avatars: [1,3]
+      }
+    ];
+
+    function renderEvents(filter = "nearby") {
+      const list = document.getElementById("events-list");
+      let items = MOCK_EVENTS;
+      if (filter === "live") items = MOCK_EVENTS.filter(e => e.tag === "live");
+      else if (filter === "upcoming") items = MOCK_EVENTS.filter(e => e.tag !== "live");
+      list.innerHTML = items.map(e => {
+        const avatars = e.avatars.map(i => {
+          const g = MOCK_GUESTS[i];
+          return `<div class="avatar" style="background:${g.gradient}">${g.initials}</div>`;
+        }).join("");
+        const isLive = e.tag === "live";
+        return `
+          <div class="event-card" onclick="joinEvent('${e.id}')">
+            <div class="event-banner" style="background:${e.gradient}">
+              <div class="event-badge ${isLive ? 'live' : ''}">${isLive ? 'Live' : e.distance}</div>
+              <div style="font-size: 56px; position: relative; z-index: 1; filter: drop-shadow(0 6px 16px rgba(0,0,0,.35));">${e.emoji}</div>
+            </div>
+            <div class="event-body">
+              <div class="event-title">${e.title}</div>
+              <div class="event-meta">
+                <span>${e.when}</span>
+                <span class="dot"></span>
+                <span>${e.where}</span>
+              </div>
+              <div class="event-foot">
+                <div class="event-attendees">${avatars}<span class="count">${e.attendees} dabei</span></div>
+                <button class="event-join ${isLive ? 'primary' : ''}" onclick="event.stopPropagation(); joinEvent('${e.id}')">${isLive ? 'Jetzt beitreten' : 'Beitreten'}</button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function joinEvent(id) {
+      const ev = MOCK_EVENTS.find(e => e.id === id);
+      if (!ev) return;
+      state.partyName = ev.title;
+      state.partyEmoji = ev.emoji;
+      state.currentCode = generateCode();
+      state.guests = MOCK_GUESTS.slice();
+      document.getElementById("party-name").textContent = ev.title;
+      document.getElementById("party-emoji").textContent = ev.emoji;
+      document.getElementById("code-text").textContent = state.currentCode;
+      go("party-lobby");
+      renderGuests();
+      drawQR(state.currentCode);
+      showToast(`Du bist bei "${ev.title}" dabei`);
+    }
+
+    document.addEventListener("click", (e) => {
+      const tab = e.target.closest("#events-tabs button");
+      if (tab) {
+        tab.parentElement.querySelectorAll("button").forEach(b => b.classList.remove("active"));
+        tab.classList.add("active");
+        renderEvents(tab.dataset.filter);
+      }
+    });
+
+    // ============ Auth / Login ============
+    function demoLogin(service) {
+      state.user.service = service;
+      showToast(`Mit ${service === "apple" ? "Apple" : service === "spotify" ? "Spotify" : "Google"} verbunden ✓`);
+      setTimeout(() => {
+        go("home");
+      }, 700);
+    }
+
+    // ============ Create Party ============
+    document.addEventListener("click", (e) => {
+      const emojiBtn = e.target.closest("#emoji-picker button");
+      if (emojiBtn) {
+        document.querySelectorAll("#emoji-picker button").forEach(b => b.classList.remove("selected"));
+        emojiBtn.classList.add("selected");
+      }
+      const moodBtn = e.target.closest(".mood-picker button");
+      if (moodBtn) {
+        moodBtn.parentElement.querySelectorAll("button").forEach(b => b.classList.remove("selected"));
+        moodBtn.classList.add("selected");
+      }
+    });
+
+    function createParty() {
+      const name = document.getElementById("new-party-name").value.trim() || "Saturday Night";
+      const emojiEl = document.querySelector("#emoji-picker .selected");
+      const emoji = emojiEl ? emojiEl.dataset.emoji : "🎉";
+      state.partyName = name;
+      state.partyEmoji = emoji;
+      state.currentCode = generateCode();
+      state.guests = [MOCK_GUESTS[0]];
+
+      document.getElementById("party-name").textContent = name;
+      document.getElementById("party-emoji").textContent = emoji;
+      document.getElementById("code-text").textContent = state.currentCode;
+
+      closeSheet("create-party");
+      go("party-lobby");
+      renderGuests();
+      drawQR(state.currentCode);
+
+      // Simulate guests joining over time
+      setTimeout(() => addGuest(1), 1400);
+      setTimeout(() => addGuest(2), 2800);
+      setTimeout(() => addGuest(3), 4200);
+    }
+
+    function generateCode() {
+      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+      let c = "";
+      for (let i = 0; i < 6; i++) c += chars[Math.floor(Math.random() * chars.length)];
+      return c;
+    }
+
+    function joinParty() {
+      const code = document.getElementById("join-input").value.trim();
+      if (!code) { showToast("Bitte Code eingeben"); return; }
+      state.currentCode = code.toUpperCase();
+      document.getElementById("code-text").textContent = state.currentCode;
+      state.guests = MOCK_GUESTS.slice(0, 2);
+      go("party-lobby");
+      renderGuests();
+      drawQR(state.currentCode);
+      setTimeout(() => addGuest(2), 1500);
+      setTimeout(() => addGuest(3), 3000);
+    }
+
+    function addGuest(idx) {
+      const source = idx !== undefined ? MOCK_GUESTS[idx] : [...MOCK_GUESTS, ...EXTRA_GUESTS][state.guests.length];
+      if (!source) { showToast("Maximal 6 Personen im Demo"); return; }
+      if (state.guests.find(g => g.name === source.name)) return;
+      state.guests.push(source);
+      renderGuests();
+    }
+
+    function renderGuests() {
+      const grid = document.getElementById("guest-grid");
+      grid.innerHTML = state.guests.map((g, i) => `
+        <div class="guest ${g.host ? "host" : ""}" style="animation-delay:${i * 80}ms">
+          <div class="avatar ${g.host ? "host" : ""}" style="background:${g.gradient}">${g.initials}</div>
+          <div class="name">${g.name}</div>
+          <div class="svc">${g.svc}</div>
+        </div>
+      `).join("");
+      document.getElementById("guest-count-title").textContent = `${state.guests.length} Person${state.guests.length === 1 ? "" : "en"}`;
+    }
+
+    function copyCode() {
+      const code = document.getElementById("code-text").textContent;
+      if (navigator.clipboard) navigator.clipboard.writeText(code).catch(()=>{});
+      showToast(`Code ${code} kopiert`);
+    }
+
+    // ============ QR Code (simple mock) ============
+    function drawQR(text) {
+      const svg = document.getElementById("qr-code");
+      const size = 21;
+      const cellSize = 180 / size;
+      let html = '<rect width="180" height="180" fill="#fff"/>';
+      // deterministic pseudo-random cells based on text
+      const hash = (s, seed) => {
+        let h = seed || 1;
+        for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) & 0xffffffff;
+        return h;
+      };
+      for (let r = 0; r < size; r++) {
+        for (let c = 0; c < size; c++) {
+          // finder patterns in corners
+          const isFinder = (r < 7 && c < 7) || (r < 7 && c >= size - 7) || (r >= size - 7 && c < 7);
+          let on = false;
+          if (isFinder) {
+            const fr = r < 7 ? r : r - (size - 7);
+            const fc = c < 7 ? c : (c < size - 7 ? -1 : c - (size - 7));
+            if (fc >= 0) {
+              on = (fr === 0 || fr === 6 || fc === 0 || fc === 6) || (fr >= 2 && fr <= 4 && fc >= 2 && fc <= 4);
+            }
+          } else {
+            on = ((hash(text, r * 100 + c) >>> (r + c) % 16) & 1) === 1;
+          }
+          if (on) html += `<rect x="${c * cellSize}" y="${r * cellSize}" width="${cellSize}" height="${cellSize}" fill="#0a0a0f"/>`;
+        }
+      }
+      svg.innerHTML = html;
+    }
+
+    // ============ Generating Animation ============
+    function startGenerating() {
+      if (state.guests.length < 2) { showToast("Mindestens 2 Personen nötig"); return; }
+      go("generating");
+      const steps = document.querySelectorAll("#gen-steps li");
+      steps.forEach(s => s.classList.remove("done", "active"));
+
+      const totalTracks = state.guests.length * 50;
+      const totalArtists = Math.round(totalTracks * 0.65);
+      animateNumber("stat-tracks", 0, totalTracks, 2400);
+      animateNumber("stat-artists", 0, totalArtists, 2400);
+      setTimeout(() => animateNumber("stat-matches", 0, 15, 1200), 2400);
+
+      steps[0].classList.add("active");
+      setTimeout(() => { steps[0].classList.remove("active"); steps[0].classList.add("done"); steps[1].classList.add("active"); }, 900);
+      setTimeout(() => { steps[1].classList.remove("active"); steps[1].classList.add("done"); steps[2].classList.add("active"); }, 1900);
+      setTimeout(() => { steps[2].classList.remove("active"); steps[2].classList.add("done"); steps[3].classList.add("active"); }, 2800);
+      setTimeout(() => { steps[3].classList.remove("active"); steps[3].classList.add("done"); }, 3800);
+
+      setTimeout(() => {
+        renderResult();
+        go("result");
+      }, 4400);
+    }
+
+    function animateNumber(id, from, to, duration) {
+      const el = document.getElementById(id);
+      const start = performance.now();
+      function step(now) {
+        const p = Math.min(1, (now - start) / duration);
+        const eased = 1 - Math.pow(1 - p, 3);
+        el.textContent = Math.round(from + (to - from) * eased);
+        if (p < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+
+    // ============ Result ============
+    function renderResult() {
+      const contrib = document.getElementById("contributors");
+      contrib.innerHTML = state.guests.map(g => `<div class="avatar" style="background:${g.gradient}">${g.initials}</div>`).join("");
+      const list = document.getElementById("track-list");
+      list.innerHTML = MOCK_TRACKS.map((t, i) => {
+        const matchAvatars = t.match.slice(0, 4).map(idx => {
+          const g = state.guests[idx] || MOCK_GUESTS[idx];
+          return g ? `<div class="avatar" style="background:${g.gradient}">${g.initials}</div>` : "";
+        }).join("");
+        return `
+          <div class="track">
+            <div class="rank">${i + 1}</div>
+            <div class="track-art" style="background:${t.gradient}">${t.art}</div>
+            <div class="track-info">
+              <div class="t">${t.title}</div>
+              <div class="a">${t.artist}</div>
+            </div>
+            <div class="track-match">${matchAvatars}<span class="match-pct">${t.pct}%</span></div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    // ============ Toast ============
+    let toastTimeout;
+    function showToast(msg) {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.classList.add("show");
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => t.classList.remove("show"), 1800);
+    }
+
+    // ============ Init ============
+    // Pre-render default guests for preview
+    state.guests = MOCK_GUESTS.slice(0, 4);
+    renderGuests();
+    drawQR(state.currentCode);
+    renderEvents();
+
+    // Register service worker for PWA install (only works on https/localhost)
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("sw.js").catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>
