@@ -725,7 +725,7 @@
 </head>
 <body>
   <!-- DEBUG: sichtbarer Versions-Stempel, damit wir Cache-Probleme sofort erkennen -->
-  <div id="ct-version-stamp" style="position:fixed;top:4px;left:4px;z-index:99998;font:600 10px -apple-system,sans-serif;color:#fff;background:rgba(99,102,241,0.9);padding:3px 8px;border-radius:8px;pointer-events:none;">Crowdtune v11 • Loading-Screen</div>
+  <div id="ct-version-stamp" style="position:fixed;top:4px;left:4px;z-index:99998;font:600 10px -apple-system,sans-serif;color:#fff;background:rgba(99,102,241,0.9);padding:3px 8px;border-radius:8px;pointer-events:none;">Crowdtune v12 • Loading-Fix</div>
 
   <!-- Auth-Loading-Overlay (wird nur gezeigt wenn wir gerade von Spotify zurückkommen) -->
   <div id="ct-auth-loading" style="display:none;position:fixed;inset:0;z-index:99997;background:linear-gradient(135deg,#0f0f1e 0%,#1a1a2e 50%,#2a1a3e 100%);display:none;align-items:center;justify-content:center;flex-direction:column;gap:24px;color:#fff;font:500 16px -apple-system,BlinkMacSystemFont,sans-serif;">
@@ -1318,7 +1318,6 @@
 
     async function spotifyLogin() {
       console.log("[Crowdtune] spotifyLogin geklickt. Client-ID vorhanden:", !!SPOTIFY_CLIENT_ID, "Redirect:", SPOTIFY_REDIRECT_URI);
-      showAuthLoading("Weiterleitung zu Spotify…");
       if (!spotifyConfigured()) {
         const msg = "Spotify Client-ID fehlt (config.js noch nicht deployed?)";
         console.error("[Crowdtune]", msg);
