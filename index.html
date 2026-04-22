@@ -725,7 +725,7 @@
 </head>
 <body>
   <!-- DEBUG: sichtbarer Versions-Stempel, damit wir Cache-Probleme sofort erkennen -->
-  <div id="ct-version-stamp" style="position:fixed;top:4px;left:4px;z-index:99998;font:600 10px -apple-system,sans-serif;color:#fff;background:rgba(99,102,241,0.9);padding:3px 8px;border-radius:8px;pointer-events:none;">Crowdtune v8 • 22.04. 15:00</div>
+  <div id="ct-version-stamp" style="position:fixed;top:4px;left:4px;z-index:99998;font:600 10px -apple-system,sans-serif;color:#fff;background:rgba(99,102,241,0.9);padding:3px 8px;border-radius:8px;pointer-events:none;">Crowdtune v9 • 22.04. Fix</div>
   <div id="app">
 
     <!-- =================== WELCOME / LOGIN =================== -->
@@ -1537,7 +1537,7 @@
     }
 
     // ============ Supabase (Phase 2b) ============
-    let supabase = null;
+    let sbClient = null;
     let partyMembersChannel = null;
 
     function supabaseConfigured() {
@@ -1554,7 +1554,7 @@
         return false;
       }
       try {
-        supabase = window.supabase.createClient(
+        sbClient = window.supabase.createClient(
           window.CROWDTUNE_CONFIG.SUPABASE_URL,
           window.CROWDTUNE_CONFIG.SUPABASE_ANON_KEY,
           { realtime: { params: { eventsPerSecond: 2 } } }
@@ -1569,7 +1569,7 @@
 
     // Eigenen Member für aktuelle Party in Supabase anlegen/updaten
     async function upsertSelfAsMember(partyId) {
-      if (!supabase || !state.user.id) return;
+      if (!sbClient || !state.user.id) return;
       // Schlanke Track-Repräsentation mitgeben – 150 reichen für Matching
       const myTracks = (state.user.tracks || []).slice(0, 150).map(e => {
         const t = e.track;
@@ -1590,15 +1590,15 @@
         service: "spotify",
         tracks: myTracks
       };
-      const { error } = await supabase
+      const { error } = await sbClient
         .from("party_members")
         .upsert(payload, { onConflict: "party_id,user_id" });
       if (error) console.error("[Crowdtune] upsert member failed", error);
     }
 
     async function createPartyInSupabase(code, name, emoji) {
-      if (!supabase || !state.user.id) return null;
-      const { data, error } = await supabase
+      if (!sbClient || !state.user.id) return null;
+      const { data, error } = await sbClient
         .from("parties")
         .insert({
           code, name, emoji,
@@ -1617,8 +1617,8 @@
     }
 
     async function findPartyByCode(code) {
-      if (!supabase) return null;
-      const { data, error } = await supabase
+      if (!sbClient) return null;
+      const { data, error } = await sbClient
         .from("parties")
         .select("*")
         .eq("code", code)
@@ -1628,8 +1628,8 @@
     }
 
     async function fetchPartyMembers(partyId) {
-      if (!supabase) return [];
-      const { data, error } = await supabase
+      if (!sbClient) return [];
+      const { data, error } = await sbClient
         .from("party_members")
         .select("*")
         .eq("party_id", partyId)
@@ -1669,9 +1669,9 @@
     }
 
     function subscribeToPartyMembers(partyId) {
-      if (!supabase) return;
+      if (!sbClient) return;
       unsubscribeFromPartyMembers();
-      partyMembersChannel = supabase
+      partyMembersChannel = sbClient
         .channel(`party_members:${partyId}`)
         .on("postgres_changes",
           { event: "*", schema: "public", table: "party_members", filter: `party_id=eq.${partyId}` },
@@ -1681,8 +1681,8 @@
     }
 
     function unsubscribeFromPartyMembers() {
-      if (partyMembersChannel && supabase) {
-        supabase.removeChannel(partyMembersChannel);
+      if (partyMembersChannel && sbClient) {
+        sbClient.removeChannel(partyMembersChannel);
         partyMembersChannel = null;
       }
     }
