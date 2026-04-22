@@ -725,7 +725,34 @@
 </head>
 <body>
   <!-- DEBUG: sichtbarer Versions-Stempel, damit wir Cache-Probleme sofort erkennen -->
-  <div id="ct-version-stamp" style="position:fixed;top:4px;left:4px;z-index:99998;font:600 10px -apple-system,sans-serif;color:#fff;background:rgba(99,102,241,0.9);padding:3px 8px;border-radius:8px;pointer-events:none;">Crowdtune v10 • Auth-Debug</div>
+  <div id="ct-version-stamp" style="position:fixed;top:4px;left:4px;z-index:99998;font:600 10px -apple-system,sans-serif;color:#fff;background:rgba(99,102,241,0.9);padding:3px 8px;border-radius:8px;pointer-events:none;">Crowdtune v11 • Loading-Screen</div>
+
+  <!-- Auth-Loading-Overlay (wird nur gezeigt wenn wir gerade von Spotify zurückkommen) -->
+  <div id="ct-auth-loading" style="display:none;position:fixed;inset:0;z-index:99997;background:linear-gradient(135deg,#0f0f1e 0%,#1a1a2e 50%,#2a1a3e 100%);display:none;align-items:center;justify-content:center;flex-direction:column;gap:24px;color:#fff;font:500 16px -apple-system,BlinkMacSystemFont,sans-serif;">
+    <div style="width:56px;height:56px;border:4px solid rgba(255,255,255,0.15);border-top-color:#8b5cf6;border-radius:50%;animation:ctSpin 0.9s linear infinite;"></div>
+    <div id="ct-auth-loading-text" style="text-align:center;max-width:260px;line-height:1.4;">
+      <div style="font-size:18px;font-weight:600;margin-bottom:6px;">Wird eingeloggt…</div>
+      <div id="ct-auth-loading-sub" style="font-size:13px;opacity:0.7;">Verbindung mit Spotify</div>
+    </div>
+  </div>
+  <style>@keyframes ctSpin { to { transform: rotate(360deg); } }</style>
+
+  <script>
+    // Overlay SOFORT zeigen wenn die URL Auth-Params hat oder ein Token vorhanden ist
+    (function() {
+      try {
+        var url = new URL(window.location.href);
+        var hasCode = !!url.searchParams.get("code");
+        var hasErr  = !!url.searchParams.get("error");
+        var hasTok  = !!localStorage.getItem("ct_access");
+        if ((hasCode || hasTok) && !hasErr) {
+          var el = document.getElementById("ct-auth-loading");
+          if (el) el.style.display = "flex";
+        }
+      } catch (e) {}
+    })();
+  </script>
+
   <div id="app">
 
     <!-- =================== WELCOME / LOGIN =================== -->
@@ -1291,6 +1318,7 @@
 
     async function spotifyLogin() {
       console.log("[Crowdtune] spotifyLogin geklickt. Client-ID vorhanden:", !!SPOTIFY_CLIENT_ID, "Redirect:", SPOTIFY_REDIRECT_URI);
+      showAuthLoading("Weiterleitung zu Spotify…");
       if (!spotifyConfigured()) {
         const msg = "Spotify Client-ID fehlt (config.js noch nicht deployed?)";
         console.error("[Crowdtune]", msg);
@@ -1325,7 +1353,24 @@
       }
     }
 
+    // ============ Auth-Loading-Overlay Steuerung ============
+    function showAuthLoading(subText) {
+      const el = document.getElementById("ct-auth-loading");
+      const sub = document.getElementById("ct-auth-loading-sub");
+      if (sub && subText) sub.textContent = subText;
+      if (el) el.style.display = "flex";
+    }
+    function updateAuthLoading(subText) {
+      const sub = document.getElementById("ct-auth-loading-sub");
+      if (sub && subText) sub.textContent = subText;
+    }
+    function hideAuthLoading() {
+      const el = document.getElementById("ct-auth-loading");
+      if (el) el.style.display = "none";
+    }
+
     function showAuthError(title, details) {
+      hideAuthLoading();
       console.error("[Crowdtune AUTH]", title, details);
       let box = document.getElementById("ct-auth-error");
       if (!box) {
@@ -1771,9 +1816,17 @@
     }
 
     async function initSpotify() {
-      if (!spotifyConfigured()) return;
+      if (!spotifyConfigured()) { hideAuthLoading(); return; }
       console.log("[Crowdtune] SPOTIFY_REDIRECT_URI =", SPOTIFY_REDIRECT_URI);
+
+      // Wenn wir mit ?code= zurückkommen oder bereits ein Token haben → Loading-Screen sichtbar halten
+      const hasCode = new URL(window.location.href).searchParams.get("code");
+      const hasTok  = localStorage.getItem("ct_access");
+      if (hasCode) updateAuthLoading("Token wird getauscht…");
+      else if (hasTok) updateAuthLoading("Session wird wiederhergestellt…");
+
       const justLoggedIn = await handleSpotifyCallback();
+      updateAuthLoading("Profil wird geladen…");
       const ok = await loadSpotifyProfile();
       if (!ok) {
         // Nur warnen wenn wir gerade versuchen eingeloggt zu sein, oder gerade zurückkamen
@@ -1781,9 +1834,12 @@
           showAuthError("Spotify-Profil laden fehlgeschlagen",
             "Token vorhanden, aber /me lieferte nichts. Evtl. Token abgelaufen oder Scopes fehlen. " +
             "Versuch: ausloggen (localStorage löschen) und neu einloggen.");
+        } else {
+          hideAuthLoading();
         }
         return;
       }
+      updateAuthLoading("Deine Songs werden analysiert…");
       await loadSpotifyProfileData();
       // Wenn gerade erst eingeloggt oder Token bereits gültig beim Reload → direkt zu Home
       const currentScreen = state.screenStack[state.screenStack.length - 1];
@@ -1793,6 +1849,7 @@
         state.screenStack = ["home"];
         updateTabBar("home");
       }
+      hideAuthLoading();
       if (justLoggedIn) showToast(`Willkommen, ${state.user.name.split(" ")[0]} 👋`);
     }
 
@@ -2087,7 +2144,11 @@
     renderEvents();
     // Spotify initialisieren (OAuth-Callback bearbeiten, Profil + Top-Tracks laden, wenn eingeloggt)
     initSupabase();
-    initSpotify().catch(err => console.error("initSpotify failed", err));
+    initSpotify().catch(err => {
+      console.error("initSpotify failed", err);
+      hideAuthLoading();
+      showAuthError("Login-Initialisierung fehlgeschlagen", (err && err.message) || String(err));
+    });
 
     // ============ CSP-sicheres Event-Binding (statt inline onclick=) ============
     // Falls Vercel/Hosting eine CSP setzt, die inline-Handler blockt, werden sie hier gebunden.
