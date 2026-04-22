@@ -3,7 +3,7 @@
  * - Lässt alle Cross-Origin-Anfragen (Spotify API, Spotify OAuth) unangetastet durch
  * - Beim Cache-Bump (CACHE-Name ändern) werden alte Caches entfernt
  */
-const CACHE = "crowdtune-v9";
+const CACHE = "crowdtune-v10";
 const ASSETS = [
   "./",
   "./index.html",
