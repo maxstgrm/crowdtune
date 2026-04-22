@@ -725,7 +725,7 @@
 </head>
 <body>
   <!-- DEBUG: sichtbarer Versions-Stempel, damit wir Cache-Probleme sofort erkennen -->
-  <div id="ct-version-stamp" style="position:fixed;top:4px;left:4px;z-index:99998;font:600 10px -apple-system,sans-serif;color:#fff;background:rgba(99,102,241,0.9);padding:3px 8px;border-radius:8px;pointer-events:none;">Crowdtune v9 • 22.04. Fix</div>
+  <div id="ct-version-stamp" style="position:fixed;top:4px;left:4px;z-index:99998;font:600 10px -apple-system,sans-serif;color:#fff;background:rgba(99,102,241,0.9);padding:3px 8px;border-radius:8px;pointer-events:none;">Crowdtune v10 • Auth-Debug</div>
   <div id="app">
 
     <!-- =================== WELCOME / LOGIN =================== -->
@@ -1325,18 +1325,41 @@
       }
     }
 
+    function showAuthError(title, details) {
+      console.error("[Crowdtune AUTH]", title, details);
+      let box = document.getElementById("ct-auth-error");
+      if (!box) {
+        box = document.createElement("div");
+        box.id = "ct-auth-error";
+        box.style.cssText = "position:fixed;top:28px;left:8px;right:8px;z-index:99999;background:#ef4444;color:#fff;padding:12px 14px;border-radius:12px;font:500 12px -apple-system,sans-serif;line-height:1.4;box-shadow:0 8px 24px rgba(0,0,0,0.4);white-space:pre-wrap;word-break:break-word;";
+        document.body.appendChild(box);
+        box.addEventListener("click", () => box.remove());
+      }
+      box.textContent = "⚠ " + title + "\n" + (typeof details === "string" ? details : JSON.stringify(details, null, 2)) + "\n\n(Tippen zum Schließen)";
+    }
+
     async function handleSpotifyCallback() {
       const url = new URL(window.location.href);
       const code = url.searchParams.get("code");
       const error = url.searchParams.get("error");
+      const errorDesc = url.searchParams.get("error_description");
+      console.log("[Crowdtune] handleSpotifyCallback. URL:", window.location.href, "code?", !!code, "error?", error);
+
       if (error) {
-        showToast("Spotify-Login abgebrochen: " + error);
+        showAuthError("Spotify-Login abgebrochen: " + error, errorDesc || "(keine Details)");
         window.history.replaceState({}, "", SPOTIFY_REDIRECT_URI);
         return false;
       }
       if (!code) return false;
       const verifier = localStorage.getItem("ct_verifier");
-      if (!verifier) return false;
+      if (!verifier) {
+        showAuthError("Login-Verifier verloren",
+          "localStorage.ct_verifier ist leer nach dem Spotify-Redirect.\n" +
+          "Meist: privater/Inkognito-Modus oder der Tab wurde geschlossen und neu geöffnet.\n" +
+          "Versuch: normalen Browser-Tab, Cookies/LocalStorage erlaubt.");
+        window.history.replaceState({}, "", SPOTIFY_REDIRECT_URI);
+        return false;
+      }
       try {
         const body = new URLSearchParams({
           client_id: SPOTIFY_CLIENT_ID,
@@ -1345,6 +1368,7 @@
           redirect_uri: SPOTIFY_REDIRECT_URI,
           code_verifier: verifier
         });
+        console.log("[Crowdtune] Token-Tausch mit redirect_uri:", SPOTIFY_REDIRECT_URI);
         const res = await fetch("https://accounts.spotify.com/api/token", {
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -1352,8 +1376,11 @@
         });
         const data = await res.json();
         if (!data.access_token) {
-          console.error("Spotify token error", data);
-          showToast("Login fehlgeschlagen – siehe Konsole");
+          showAuthError("Spotify Token-Tausch fehlgeschlagen (HTTP " + res.status + ")",
+            "Antwort: " + JSON.stringify(data) +
+            "\n\nVerwendete redirect_uri: " + SPOTIFY_REDIRECT_URI +
+            "\n\nMögliche Ursache: die Redirect-URI im Spotify-Dashboard stimmt nicht EXAKT mit obiger überein (inkl. https:// und abschließendem /). " +
+            "Gehe auf developer.spotify.com/dashboard → deine App → Edit Settings → Redirect URIs → genau diesen Wert eintragen und speichern.");
           return false;
         }
         localStorage.setItem("ct_access", data.access_token);
@@ -1361,10 +1388,10 @@
         localStorage.setItem("ct_expires", String(Date.now() + (data.expires_in || 3600) * 1000));
         localStorage.removeItem("ct_verifier");
         window.history.replaceState({}, "", SPOTIFY_REDIRECT_URI);
+        console.log("[Crowdtune] Token erhalten, expires_in:", data.expires_in);
         return true;
       } catch (e) {
-        console.error(e);
-        showToast("Netzwerkfehler beim Login");
+        showAuthError("Netzwerkfehler beim Spotify-Login", (e && e.message) || String(e));
         return false;
       }
     }
@@ -1745,9 +1772,18 @@
 
     async function initSpotify() {
       if (!spotifyConfigured()) return;
+      console.log("[Crowdtune] SPOTIFY_REDIRECT_URI =", SPOTIFY_REDIRECT_URI);
       const justLoggedIn = await handleSpotifyCallback();
       const ok = await loadSpotifyProfile();
-      if (!ok) return;
+      if (!ok) {
+        // Nur warnen wenn wir gerade versuchen eingeloggt zu sein, oder gerade zurückkamen
+        if (justLoggedIn || localStorage.getItem("ct_access")) {
+          showAuthError("Spotify-Profil laden fehlgeschlagen",
+            "Token vorhanden, aber /me lieferte nichts. Evtl. Token abgelaufen oder Scopes fehlen. " +
+            "Versuch: ausloggen (localStorage löschen) und neu einloggen.");
+        }
+        return;
+      }
       await loadSpotifyProfileData();
       // Wenn gerade erst eingeloggt oder Token bereits gültig beim Reload → direkt zu Home
       const currentScreen = state.screenStack[state.screenStack.length - 1];
