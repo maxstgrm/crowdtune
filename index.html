@@ -1266,22 +1266,39 @@
     }
 
     async function spotifyLogin() {
+      console.log("[Crowdtune] spotifyLogin geklickt. Client-ID vorhanden:", !!SPOTIFY_CLIENT_ID, "Redirect:", SPOTIFY_REDIRECT_URI);
       if (!spotifyConfigured()) {
-        showToast("Spotify Client-ID fehlt – siehe SPOTIFY-SETUP.md");
+        const msg = "Spotify Client-ID fehlt (config.js noch nicht deployed?)";
+        console.error("[Crowdtune]", msg);
+        showToast(msg);
+        alert(msg + "\n\nAktueller Wert: " + (SPOTIFY_CLIENT_ID || "(leer)"));
         return;
       }
-      const verifier = sRandom(64);
-      const challenge = await sChallenge(verifier);
-      localStorage.setItem("ct_verifier", verifier);
-      const params = new URLSearchParams({
-        client_id: SPOTIFY_CLIENT_ID,
-        response_type: "code",
-        redirect_uri: SPOTIFY_REDIRECT_URI,
-        scope: SPOTIFY_SCOPES,
-        code_challenge_method: "S256",
-        code_challenge: challenge
-      });
-      window.location.href = "https://accounts.spotify.com/authorize?" + params.toString();
+      if (!window.isSecureContext || !window.crypto || !window.crypto.subtle) {
+        const msg = "Spotify-Login braucht HTTPS (crypto.subtle verfügbar: " + !!(window.crypto && window.crypto.subtle) + ")";
+        console.error("[Crowdtune]", msg);
+        alert(msg);
+        return;
+      }
+      try {
+        const verifier = sRandom(64);
+        const challenge = await sChallenge(verifier);
+        localStorage.setItem("ct_verifier", verifier);
+        const params = new URLSearchParams({
+          client_id: SPOTIFY_CLIENT_ID,
+          response_type: "code",
+          redirect_uri: SPOTIFY_REDIRECT_URI,
+          scope: SPOTIFY_SCOPES,
+          code_challenge_method: "S256",
+          code_challenge: challenge
+        });
+        const authUrl = "https://accounts.spotify.com/authorize?" + params.toString();
+        console.log("[Crowdtune] Redirect zu Spotify:", authUrl);
+        window.location.href = authUrl;
+      } catch (e) {
+        console.error("[Crowdtune] spotifyLogin failed:", e);
+        alert("Login-Fehler: " + (e && e.message || e));
+      }
     }
 
     async function handleSpotifyCallback() {
