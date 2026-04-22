@@ -11,6 +11,8 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="apple-touch-icon" href="icon.svg" />
   <link rel="icon" type="image/svg+xml" href="icon.svg" />
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <title>Crowdtune – Der perfekte Mix für jede Crew</title>
   <style>
     /* --------- Reset & Base --------- */
@@ -744,7 +746,7 @@
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
           Mit Apple fortfahren
         </button>
-        <button class="btn btn-spotify" onclick="demoLogin('spotify')">
+        <button class="btn btn-spotify" onclick="spotifyLogin()">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
           Mit Spotify fortfahren
         </button>
@@ -1239,6 +1241,484 @@
       }, 700);
     }
 
+    // ============ Spotify OAuth (PKCE) ============
+    const SPOTIFY_CLIENT_ID = (window.CROWDTUNE_CONFIG || {}).SPOTIFY_CLIENT_ID || "";
+    // Redirect-URI: aktueller Ordner (https://.../)
+    const SPOTIFY_REDIRECT_URI = window.location.origin + window.location.pathname.replace(/[^\/]*$/, "");
+    const SPOTIFY_SCOPES = "user-top-read user-read-private user-read-email user-read-recently-played user-library-read";
+
+    function spotifyConfigured() {
+      return SPOTIFY_CLIENT_ID && SPOTIFY_CLIENT_ID !== "DEINE_SPOTIFY_CLIENT_ID_HIER";
+    }
+
+    function sRandom(length) {
+      const arr = new Uint8Array(length);
+      crypto.getRandomValues(arr);
+      const alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+      return Array.from(arr, b => alphabet[b % alphabet.length]).join("");
+    }
+
+    async function sChallenge(verifier) {
+      const data = new TextEncoder().encode(verifier);
+      const digest = await crypto.subtle.digest("SHA-256", data);
+      return btoa(String.fromCharCode(...new Uint8Array(digest)))
+        .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    }
+
+    async function spotifyLogin() {
+      if (!spotifyConfigured()) {
+        showToast("Spotify Client-ID fehlt – siehe SPOTIFY-SETUP.md");
+        return;
+      }
+      const verifier = sRandom(64);
+      const challenge = await sChallenge(verifier);
+      localStorage.setItem("ct_verifier", verifier);
+      const params = new URLSearchParams({
+        client_id: SPOTIFY_CLIENT_ID,
+        response_type: "code",
+        redirect_uri: SPOTIFY_REDIRECT_URI,
+        scope: SPOTIFY_SCOPES,
+        code_challenge_method: "S256",
+        code_challenge: challenge
+      });
+      window.location.href = "https://accounts.spotify.com/authorize?" + params.toString();
+    }
+
+    async function handleSpotifyCallback() {
+      const url = new URL(window.location.href);
+      const code = url.searchParams.get("code");
+      const error = url.searchParams.get("error");
+      if (error) {
+        showToast("Spotify-Login abgebrochen: " + error);
+        window.history.replaceState({}, "", SPOTIFY_REDIRECT_URI);
+        return false;
+      }
+      if (!code) return false;
+      const verifier = localStorage.getItem("ct_verifier");
+      if (!verifier) return false;
+      try {
+        const body = new URLSearchParams({
+          client_id: SPOTIFY_CLIENT_ID,
+          grant_type: "authorization_code",
+          code: code,
+          redirect_uri: SPOTIFY_REDIRECT_URI,
+          code_verifier: verifier
+        });
+        const res = await fetch("https://accounts.spotify.com/api/token", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body
+        });
+        const data = await res.json();
+        if (!data.access_token) {
+          console.error("Spotify token error", data);
+          showToast("Login fehlgeschlagen – siehe Konsole");
+          return false;
+        }
+        localStorage.setItem("ct_access", data.access_token);
+        localStorage.setItem("ct_refresh", data.refresh_token || "");
+        localStorage.setItem("ct_expires", String(Date.now() + (data.expires_in || 3600) * 1000));
+        localStorage.removeItem("ct_verifier");
+        window.history.replaceState({}, "", SPOTIFY_REDIRECT_URI);
+        return true;
+      } catch (e) {
+        console.error(e);
+        showToast("Netzwerkfehler beim Login");
+        return false;
+      }
+    }
+
+    async function spotifyToken() {
+      const access = localStorage.getItem("ct_access");
+      const expires = parseInt(localStorage.getItem("ct_expires") || "0", 10);
+      if (access && Date.now() < expires - 60000) return access;
+      const refresh = localStorage.getItem("ct_refresh");
+      if (!refresh) return null;
+      try {
+        const body = new URLSearchParams({
+          client_id: SPOTIFY_CLIENT_ID,
+          grant_type: "refresh_token",
+          refresh_token: refresh
+        });
+        const res = await fetch("https://accounts.spotify.com/api/token", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body
+        });
+        const data = await res.json();
+        if (!data.access_token) return null;
+        localStorage.setItem("ct_access", data.access_token);
+        if (data.refresh_token) localStorage.setItem("ct_refresh", data.refresh_token);
+        localStorage.setItem("ct_expires", String(Date.now() + (data.expires_in || 3600) * 1000));
+        return data.access_token;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    async function spotifyApi(endpoint) {
+      const token = await spotifyToken();
+      if (!token) return null;
+      const res = await fetch("https://api.spotify.com/v1" + endpoint, {
+        headers: { "Authorization": "Bearer " + token }
+      });
+      if (res.status === 401) { spotifyLogout(); return null; }
+      if (!res.ok) { console.error("Spotify API error", res.status, await res.text()); return null; }
+      return res.json();
+    }
+
+    function spotifyLogout() {
+      ["ct_access","ct_refresh","ct_expires","ct_verifier"].forEach(k => localStorage.removeItem(k));
+      state.user.spotifyConnected = false;
+      state.user.topTracks = null;
+    }
+
+    async function loadSpotifyProfile() {
+      const profile = await spotifyApi("/me");
+      if (!profile) return false;
+      state.user.id = profile.id;
+      state.user.name = profile.display_name || profile.id || "Du";
+      state.user.initials = (state.user.name[0] || "U").toUpperCase();
+      state.user.avatarUrl = (profile.images && profile.images[0] && profile.images[0].url) || null;
+      state.user.service = "spotify";
+      state.user.spotifyConnected = true;
+
+      // UI aktualisieren
+      const nameEl = document.getElementById("user-name");
+      const avatarEl = document.getElementById("user-avatar");
+      if (nameEl) nameEl.textContent = state.user.name;
+      if (avatarEl) {
+        if (state.user.avatarUrl) {
+          avatarEl.innerHTML = "";
+          avatarEl.style.backgroundImage = `url('${state.user.avatarUrl}')`;
+          avatarEl.style.backgroundSize = "cover";
+        } else {
+          avatarEl.textContent = state.user.initials;
+        }
+      }
+      // Max in MOCK_GUESTS ersetzen, damit auch im Lobby & Mix der echte Name/Avatar steht
+      if (MOCK_GUESTS[0]) {
+        MOCK_GUESTS[0].name = state.user.name;
+        MOCK_GUESTS[0].initials = state.user.initials;
+        if (state.user.avatarUrl) MOCK_GUESTS[0].avatarUrl = state.user.avatarUrl;
+      }
+      return true;
+    }
+
+    // Paginiert durch /me/tracks (Liked Songs) bis zu maxTotal
+    async function fetchAllSaved(maxTotal = 500) {
+      const all = [];
+      let url = "/me/tracks?limit=50";
+      let safety = 20; // max 20 * 50 = 1000
+      while (url && all.length < maxTotal && safety-- > 0) {
+        const page = await spotifyApi(url);
+        if (!page || !page.items) break;
+        for (const it of page.items) {
+          if (it && it.track) all.push(it.track);
+        }
+        if (!page.next) break;
+        // page.next ist absolute URL – wir brauchen den Pfad relativ zur API-Base
+        const u = new URL(page.next);
+        url = u.pathname.replace("/v1", "") + u.search;
+      }
+      return all;
+    }
+
+    // Holt breites Hör-Profil: Top-Tracks (3 Zeiträume) + Liked Songs + Top-Artists + Recent
+    // Kombiniert alles mit gewichtetem Scoring in state.user.tracks (Map von id → {track, score}).
+    async function loadSpotifyProfileData() {
+      const [shortT, medT, longT, saved, artistsShort, artistsMed, recent] = await Promise.all([
+        spotifyApi("/me/top/tracks?limit=50&time_range=short_term"),
+        spotifyApi("/me/top/tracks?limit=50&time_range=medium_term"),
+        spotifyApi("/me/top/tracks?limit=50&time_range=long_term"),
+        fetchAllSaved(500),
+        spotifyApi("/me/top/artists?limit=50&time_range=short_term"),
+        spotifyApi("/me/top/artists?limit=50&time_range=medium_term"),
+        spotifyApi("/me/player/recently-played?limit=50")
+      ]);
+
+      // Gewichtungs-Schema:
+      //   short_term Top-Track Platz 1 → ~1.5 * (1 - 0/50) = 1.5 down to 0.03
+      //   medium_term ×1.2, long_term ×1.0, recently_played ×0.8, saved ×0.5 (flach, da keine Rangfolge)
+      const scored = new Map(); // id → {track, score}
+      const bump = (track, add) => {
+        if (!track || !track.id) return;
+        const cur = scored.get(track.id);
+        if (cur) cur.score += add;
+        else scored.set(track.id, { track, score: add });
+      };
+
+      const addRanked = (list, weight) => {
+        if (!list || !list.items) return;
+        list.items.forEach((t, i) => {
+          const positional = 1 - (i / Math.max(1, list.items.length)); // 1.0 → 0.02
+          bump(t, weight * positional);
+        });
+      };
+
+      addRanked(shortT, 1.5);
+      addRanked(medT, 1.2);
+      addRanked(longT, 1.0);
+
+      if (recent && recent.items) {
+        recent.items.forEach((it, i) => {
+          const positional = 1 - (i / Math.max(1, recent.items.length));
+          bump(it.track, 0.8 * positional);
+        });
+      }
+
+      // Liked Songs – flaches Gewicht, aber summierbar (viele Likes → viele kleine Bumps)
+      saved.forEach(t => bump(t, 0.5));
+
+      // Top-Artists: boost für Tracks, deren Künstler in Top-Artists auftauchen
+      const topArtistIds = new Set();
+      if (artistsShort && artistsShort.items) artistsShort.items.forEach(a => a && a.id && topArtistIds.add(a.id));
+      if (artistsMed && artistsMed.items) artistsMed.items.forEach(a => a && a.id && topArtistIds.add(a.id));
+      for (const entry of scored.values()) {
+        const artistMatch = (entry.track.artists || []).some(a => topArtistIds.has(a.id));
+        if (artistMatch) entry.score += 0.3;
+      }
+
+      // Sortiert als Array
+      const sorted = [...scored.values()].sort((a, b) => b.score - a.score);
+      state.user.tracks = sorted;                // [{track, score}, …]
+      state.user.topTracks = sorted.map(e => e.track); // Abwärts-kompat: buildTracksFromSpotify nutzt das
+      state.user.trackCount = sorted.length;
+      state.user.topArtistIds = [...topArtistIds];
+
+      console.log(`[Crowdtune] Profil geladen: ${sorted.length} einzigartige Tracks, ${topArtistIds.size} Top-Artists`);
+      return sorted.length > 0;
+    }
+
+    // Alte Funktionsnamen für Rückwärtskompatibilität
+    async function loadSpotifyTopTracks() {
+      return loadSpotifyProfileData();
+    }
+
+    // ============ Supabase (Phase 2b) ============
+    let supabase = null;
+    let partyMembersChannel = null;
+
+    function supabaseConfigured() {
+      const c = window.CROWDTUNE_CONFIG || {};
+      return !!(c.SUPABASE_URL && c.SUPABASE_ANON_KEY
+        && !c.SUPABASE_URL.startsWith("DEIN")
+        && !c.SUPABASE_ANON_KEY.startsWith("DEIN")
+        && window.supabase && window.supabase.createClient);
+    }
+
+    function initSupabase() {
+      if (!supabaseConfigured()) {
+        console.log("[Crowdtune] Supabase nicht konfiguriert – App läuft mit Mock-Gästen");
+        return false;
+      }
+      try {
+        supabase = window.supabase.createClient(
+          window.CROWDTUNE_CONFIG.SUPABASE_URL,
+          window.CROWDTUNE_CONFIG.SUPABASE_ANON_KEY,
+          { realtime: { params: { eventsPerSecond: 2 } } }
+        );
+        console.log("[Crowdtune] Supabase verbunden");
+        return true;
+      } catch (e) {
+        console.error("[Crowdtune] Supabase init failed", e);
+        return false;
+      }
+    }
+
+    // Eigenen Member für aktuelle Party in Supabase anlegen/updaten
+    async function upsertSelfAsMember(partyId) {
+      if (!supabase || !state.user.id) return;
+      // Schlanke Track-Repräsentation mitgeben – 150 reichen für Matching
+      const myTracks = (state.user.tracks || []).slice(0, 150).map(e => {
+        const t = e.track;
+        return {
+          id: t.id,
+          name: t.name,
+          artists: (t.artists || []).map(a => a.name),
+          image: t.album && t.album.images && t.album.images[0] ? t.album.images[0].url : null,
+          url: t.external_urls && t.external_urls.spotify,
+          score: Math.round(e.score * 100) / 100
+        };
+      });
+      const payload = {
+        party_id: partyId,
+        user_id: state.user.id,
+        display_name: state.user.name,
+        avatar_url: state.user.avatarUrl || null,
+        service: "spotify",
+        tracks: myTracks
+      };
+      const { error } = await supabase
+        .from("party_members")
+        .upsert(payload, { onConflict: "party_id,user_id" });
+      if (error) console.error("[Crowdtune] upsert member failed", error);
+    }
+
+    async function createPartyInSupabase(code, name, emoji) {
+      if (!supabase || !state.user.id) return null;
+      const { data, error } = await supabase
+        .from("parties")
+        .insert({
+          code, name, emoji,
+          host_id: state.user.id,
+          host_name: state.user.name
+        })
+        .select()
+        .single();
+      if (error) {
+        console.error("[Crowdtune] create party failed", error);
+        showToast("Party konnte nicht gespeichert werden");
+        return null;
+      }
+      await upsertSelfAsMember(data.id);
+      return data;
+    }
+
+    async function findPartyByCode(code) {
+      if (!supabase) return null;
+      const { data, error } = await supabase
+        .from("parties")
+        .select("*")
+        .eq("code", code)
+        .maybeSingle();
+      if (error) { console.error("[Crowdtune] find party failed", error); return null; }
+      return data;
+    }
+
+    async function fetchPartyMembers(partyId) {
+      if (!supabase) return [];
+      const { data, error } = await supabase
+        .from("party_members")
+        .select("*")
+        .eq("party_id", partyId)
+        .order("joined_at", { ascending: true });
+      if (error) { console.error("[Crowdtune] fetch members failed", error); return []; }
+      return data || [];
+    }
+
+    // Members aus DB in state.guests (UI-Format) mappen
+    function membersToGuests(members, hostId) {
+      const palette = [
+        "linear-gradient(135deg,#6366f1,#8b5cf6)",
+        "linear-gradient(135deg,#3b82f6,#6366f1)",
+        "linear-gradient(135deg,#8b5cf6,#a78bfa)",
+        "linear-gradient(135deg,#6366f1,#3b82f6)",
+        "linear-gradient(135deg,#a78bfa,#c4b5fd)",
+        "linear-gradient(135deg,#8a2be2,#6366f1)"
+      ];
+      return members.map((m, i) => ({
+        id: m.user_id,
+        name: m.display_name || "Gast",
+        initials: (m.display_name || "G").split(" ").map(s => s[0]).join("").slice(0, 2).toUpperCase(),
+        avatarUrl: m.avatar_url || null,
+        svc: m.service === "apple" ? "Apple Music" : "Spotify",
+        gradient: palette[i % palette.length],
+        host: m.user_id === hostId,
+        tracks: m.tracks || []
+      }));
+    }
+
+    async function refreshGuestsFromSupabase() {
+      if (!state.party || !state.party.id) return;
+      const members = await fetchPartyMembers(state.party.id);
+      state.partyMembers = members;
+      state.guests = membersToGuests(members, state.party.host_id);
+      if (typeof renderGuests === "function") renderGuests();
+    }
+
+    function subscribeToPartyMembers(partyId) {
+      if (!supabase) return;
+      unsubscribeFromPartyMembers();
+      partyMembersChannel = supabase
+        .channel(`party_members:${partyId}`)
+        .on("postgres_changes",
+          { event: "*", schema: "public", table: "party_members", filter: `party_id=eq.${partyId}` },
+          () => { refreshGuestsFromSupabase(); }
+        )
+        .subscribe();
+    }
+
+    function unsubscribeFromPartyMembers() {
+      if (partyMembersChannel && supabase) {
+        supabase.removeChannel(partyMembersChannel);
+        partyMembersChannel = null;
+      }
+    }
+
+    // Echte Überschneidungs-Berechnung aus allen Members
+    function buildTracksFromSupabase() {
+      const members = state.partyMembers || [];
+      if (members.length < 1) return null;
+
+      // id → { track, memberIndices: [], totalScore }
+      const combined = new Map();
+      members.forEach((m, memberIdx) => {
+        (m.tracks || []).forEach(t => {
+          if (!t || !t.id) return;
+          let entry = combined.get(t.id);
+          if (!entry) {
+            entry = {
+              id: t.id, name: t.name,
+              artists: t.artists || [],
+              image: t.image,
+              url: t.url,
+              memberIndices: new Set(),
+              totalScore: 0
+            };
+            combined.set(t.id, entry);
+          }
+          entry.memberIndices.add(memberIdx);
+          entry.totalScore += (t.score || 0.5);
+        });
+      });
+
+      // Sortierung: viele Matches > hoher Gesamtscore
+      const arr = [...combined.values()].sort((a, b) => {
+        const ma = a.memberIndices.size, mb = b.memberIndices.size;
+        if (mb !== ma) return mb - ma;
+        return b.totalScore - a.totalScore;
+      });
+
+      if (!arr.length) return null;
+
+      const topN = arr.slice(0, 15);
+      const memberCount = members.length;
+      return topN.map((t) => {
+        const matches = [...t.memberIndices];
+        // Prozent = (Anteil Matches) * 60 + Score-Bonus, gecappt auf 98
+        const ratio = matches.length / memberCount;
+        const pct = Math.min(98, Math.max(50, Math.round(ratio * 70 + Math.min(28, t.totalScore * 4))));
+        return {
+          title: t.name,
+          artist: (t.artists || []).join(", "),
+          image: t.image,
+          gradient: "linear-gradient(135deg,#6366f1,#8b5cf6)",
+          art: "🎵",
+          match: matches,
+          pct,
+          spotifyUrl: t.url
+        };
+      });
+    }
+
+    async function initSpotify() {
+      if (!spotifyConfigured()) return;
+      const justLoggedIn = await handleSpotifyCallback();
+      const ok = await loadSpotifyProfile();
+      if (!ok) return;
+      await loadSpotifyProfileData();
+      // Wenn gerade erst eingeloggt oder Token bereits gültig beim Reload → direkt zu Home
+      const currentScreen = state.screenStack[state.screenStack.length - 1];
+      if (currentScreen === "welcome") {
+        document.getElementById("screen-welcome").classList.remove("active");
+        document.getElementById("screen-home").classList.add("active");
+        state.screenStack = ["home"];
+        updateTabBar("home");
+      }
+      if (justLoggedIn) showToast(`Willkommen, ${state.user.name.split(" ")[0]} 👋`);
+    }
+
     // ============ Create Party ============
     document.addEventListener("click", (e) => {
       const emojiBtn = e.target.closest("#emoji-picker button");
@@ -1253,25 +1733,44 @@
       }
     });
 
-    function createParty() {
+    async function createParty() {
       const name = document.getElementById("new-party-name").value.trim() || "Saturday Night";
       const emojiEl = document.querySelector("#emoji-picker .selected");
       const emoji = emojiEl ? emojiEl.dataset.emoji : "🎉";
       state.partyName = name;
       state.partyEmoji = emoji;
       state.currentCode = generateCode();
-      state.guests = [MOCK_GUESTS[0]];
 
       document.getElementById("party-name").textContent = name;
       document.getElementById("party-emoji").textContent = emoji;
       document.getElementById("code-text").textContent = state.currentCode;
 
+      // Supabase: echte Party anlegen
+      if (supabaseConfigured() && state.user.id) {
+        unsubscribeFromPartyMembers();
+        const party = await createPartyInSupabase(state.currentCode, name, emoji);
+        if (party) {
+          state.party = party;
+          state.isHost = true;
+          await refreshGuestsFromSupabase();
+          subscribeToPartyMembers(party.id);
+          closeSheet("create-party");
+          go("party-lobby");
+          drawQR(state.currentCode);
+          return;
+        }
+        // Fehler beim Anlegen → Fallback Mock
+      }
+
+      // Fallback ohne Supabase: Mock-Lobby wie zuvor
+      state.party = null;
+      state.partyMembers = null;
+      state.isHost = false;
+      state.guests = [MOCK_GUESTS[0]];
       closeSheet("create-party");
       go("party-lobby");
       renderGuests();
       drawQR(state.currentCode);
-
-      // Simulate guests joining over time
       setTimeout(() => addGuest(1), 1400);
       setTimeout(() => addGuest(2), 2800);
       setTimeout(() => addGuest(3), 4200);
@@ -1284,11 +1783,37 @@
       return c;
     }
 
-    function joinParty() {
+    async function joinParty() {
       const code = document.getElementById("join-input").value.trim();
       if (!code) { showToast("Bitte Code eingeben"); return; }
       state.currentCode = code.toUpperCase();
       document.getElementById("code-text").textContent = state.currentCode;
+
+      // Supabase: echte Party suchen und beitreten
+      if (supabaseConfigured() && state.user.id) {
+        unsubscribeFromPartyMembers();
+        const party = await findPartyByCode(state.currentCode);
+        if (!party) {
+          showToast("Party nicht gefunden");
+          return;
+        }
+        state.party = party;
+        state.isHost = (party.host_id === state.user.id);
+        state.partyName = party.name;
+        state.partyEmoji = party.emoji || "🎉";
+        document.getElementById("party-name").textContent = party.name;
+        document.getElementById("party-emoji").textContent = party.emoji || "🎉";
+        await upsertSelfAsMember(party.id);
+        await refreshGuestsFromSupabase();
+        subscribeToPartyMembers(party.id);
+        go("party-lobby");
+        drawQR(state.currentCode);
+        return;
+      }
+
+      // Fallback ohne Supabase
+      state.party = null;
+      state.partyMembers = null;
       state.guests = MOCK_GUESTS.slice(0, 2);
       go("party-lobby");
       renderGuests();
@@ -1305,11 +1830,19 @@
       renderGuests();
     }
 
+    function avatarStyle(g) {
+      if (g.avatarUrl) return `background-image:url('${g.avatarUrl}');background-size:cover;background-position:center;`;
+      return `background:${g.gradient};`;
+    }
+    function avatarContent(g) {
+      return g.avatarUrl ? "" : g.initials;
+    }
+
     function renderGuests() {
       const grid = document.getElementById("guest-grid");
       grid.innerHTML = state.guests.map((g, i) => `
         <div class="guest ${g.host ? "host" : ""}" style="animation-delay:${i * 80}ms">
-          <div class="avatar ${g.host ? "host" : ""}" style="background:${g.gradient}">${g.initials}</div>
+          <div class="avatar ${g.host ? "host" : ""}" style="${avatarStyle(g)}">${avatarContent(g)}</div>
           <div class="name">${g.name}</div>
           <div class="svc">${g.svc}</div>
         </div>
@@ -1393,19 +1926,54 @@
     }
 
     // ============ Result ============
+    function buildTracksFromSpotify() {
+      // Nimm bis zu 15 echte Top-Tracks und "simuliere" die Matches der anderen Gäste.
+      // Phase 2b (echte Gäste-Tracks) kommt mit Backend.
+      const items = (state.user.topTracks || []).slice(0, 15);
+      if (!items.length) return null;
+      const guestCount = Math.max(2, state.guests.length);
+      return items.map((t, i) => {
+        // Plausible Match-Verteilung: Platz 1 matcht bei allen, später weniger
+        const matchCount = Math.max(2, guestCount - Math.floor(i / 4));
+        const match = Array.from({length: matchCount}, (_, k) => k);
+        const pct = Math.max(58, 98 - i * 3);
+        const img = t.album && t.album.images && t.album.images[0] ? t.album.images[0].url : null;
+        return {
+          title: t.name,
+          artist: (t.artists || []).map(a => a.name).join(", "),
+          image: img,
+          gradient: "linear-gradient(135deg,#6366f1,#8b5cf6)",
+          art: "🎵",
+          match,
+          pct,
+          spotifyUrl: t.external_urls && t.external_urls.spotify
+        };
+      });
+    }
+
     function renderResult() {
       const contrib = document.getElementById("contributors");
-      contrib.innerHTML = state.guests.map(g => `<div class="avatar" style="background:${g.gradient}">${g.initials}</div>`).join("");
+      contrib.innerHTML = state.guests.map(g =>
+        `<div class="avatar" style="${avatarStyle(g)}">${avatarContent(g)}</div>`
+      ).join("");
+
+      // Priorität: echte Multi-User-Überschneidungen aus Supabase → Solo-Tracks aus Spotify → Mock
+      const tracks = buildTracksFromSupabase() || buildTracksFromSpotify() || MOCK_TRACKS;
       const list = document.getElementById("track-list");
-      list.innerHTML = MOCK_TRACKS.map((t, i) => {
-        const matchAvatars = t.match.slice(0, 4).map(idx => {
+      list.innerHTML = tracks.map((t, i) => {
+        const matchAvatars = (t.match || []).slice(0, 4).map(idx => {
           const g = state.guests[idx] || MOCK_GUESTS[idx];
-          return g ? `<div class="avatar" style="background:${g.gradient}">${g.initials}</div>` : "";
+          return g ? `<div class="avatar" style="${avatarStyle(g)}">${avatarContent(g)}</div>` : "";
         }).join("");
+        const artStyle = t.image
+          ? `background-image:url('${t.image}');background-size:cover;background-position:center;`
+          : `background:${t.gradient};`;
+        const artContent = t.image ? "" : (t.art || "🎵");
+        const titleAttr = t.spotifyUrl ? `onclick="window.open('${t.spotifyUrl}','_blank')" style="cursor:pointer"` : "";
         return `
-          <div class="track">
+          <div class="track" ${titleAttr}>
             <div class="rank">${i + 1}</div>
-            <div class="track-art" style="background:${t.gradient}">${t.art}</div>
+            <div class="track-art" style="${artStyle}">${artContent}</div>
             <div class="track-info">
               <div class="t">${t.title}</div>
               <div class="a">${t.artist}</div>
@@ -1414,6 +1982,14 @@
           </div>
         `;
       }).join("");
+
+      // Meta-Info anpassen
+      const meta = document.querySelector(".mix-meta");
+      if (meta) {
+        const count = tracks.length;
+        const minutes = Math.round(count * 3.4);
+        meta.textContent = `${count} Songs · ${minutes} Minuten · ${state.guests.length} Personen`;
+      }
     }
 
     // ============ Toast ============
@@ -1432,6 +2008,9 @@
     renderGuests();
     drawQR(state.currentCode);
     renderEvents();
+    // Spotify initialisieren (OAuth-Callback bearbeiten, Profil + Top-Tracks laden, wenn eingeloggt)
+    initSupabase();
+    initSpotify().catch(err => console.error("initSpotify failed", err));
 
     // Register service worker for PWA install (only works on https/localhost)
     if ("serviceWorker" in navigator) {
