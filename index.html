@@ -189,32 +189,33 @@
 
     /* --------- Cards --------- */
     .big-cta {
-      margin: 10px 0 28px;
-      padding: 28px 24px;
-      border-radius: 26px;
+      margin: 6px 0 20px;
+      padding: 16px 18px;
+      border-radius: 18px;
       background: linear-gradient(135deg, #6366f1 0%, #8a2be2 70%, #5d5cde 100%);
       position: relative;
       overflow: hidden;
-      box-shadow: 0 20px 50px rgba(138,43,226,.3);
+      box-shadow: 0 10px 30px rgba(138,43,226,.28);
       cursor: pointer;
       transition: transform .2s ease;
     }
     .big-cta:active { transform: scale(.98); }
     .big-cta::before {
       content: "";
-      position: absolute; right: -40px; top: -40px; width: 180px; height: 180px;
-      background: radial-gradient(circle, rgba(255,255,255,.3) 0%, transparent 70%);
+      position: absolute; right: -30px; top: -30px; width: 120px; height: 120px;
+      background: radial-gradient(circle, rgba(255,255,255,.25) 0%, transparent 70%);
       pointer-events: none;
     }
-    .big-cta .label { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; opacity: .8; margin-bottom: 6px; }
-    .big-cta .title { font-size: 26px; font-weight: 700; letter-spacing: -.02em; line-height: 1.15; margin-bottom: 14px; max-width: 75%; }
+    .big-cta .label { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; opacity: .75; margin-bottom: 2px; }
+    .big-cta .title { font-size: 17px; font-weight: 700; letter-spacing: -.01em; line-height: 1.2; margin-bottom: 2px; max-width: 80%; }
+    .big-cta .muted { display: none; }
     .big-cta .arrow {
-      position: absolute; right: 22px; bottom: 22px;
-      width: 44px; height: 44px; border-radius: 50%;
+      position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+      width: 34px; height: 34px; border-radius: 50%;
       background: rgba(255,255,255,.22);
       backdrop-filter: blur(10px);
       display: grid; place-items: center;
-      font-size: 20px;
+      font-size: 16px;
     }
 
     .section-title {
@@ -955,7 +956,7 @@
 </head>
 <body>
   <!-- DEBUG: sichtbarer Versions-Stempel, damit wir Cache-Probleme sofort erkennen -->
-  <div id="ct-version-stamp" style="position:fixed;top:4px;left:4px;z-index:99998;font:600 10px -apple-system,sans-serif;color:#fff;background:rgba(99,102,241,0.9);padding:3px 8px;border-radius:8px;pointer-events:none;">Crowdtune v14 • Benefits+Profil</div>
+  <div id="ct-version-stamp" style="position:fixed;top:4px;left:4px;z-index:99998;font:600 10px -apple-system,sans-serif;color:#fff;background:rgba(99,102,241,0.9);padding:3px 8px;border-radius:8px;pointer-events:none;">Crowdtune v15 • Event-Händler</div>
 
   <!-- Auth-Loading-Overlay (wird nur gezeigt wenn wir gerade von Spotify zurückkommen) -->
   <div id="ct-auth-loading" style="display:none;position:fixed;inset:0;z-index:99997;background:linear-gradient(135deg,#0f0f1e 0%,#1a1a2e 50%,#2a1a3e 100%);display:none;align-items:center;justify-content:center;flex-direction:column;gap:24px;color:#fff;font:500 16px -apple-system,BlinkMacSystemFont,sans-serif;">
@@ -1567,50 +1568,53 @@
       }
     ];
 
-    // Mock-Händler im Event/Club-Kontext (Namen passend zu den Event-Einträgen unten)
+    // Mock-Händler im Event-Kontext, Format "Event @ Venue"
     const MOCK_MERCHANTS = [
-      { name: "Klunkerkranich",        logo: "🌆", category: "Rooftop-Bar" },
-      { name: "Müggelsee Strandbad",   logo: "🏖️", category: "Open-Air" },
-      { name: "Lido Kreuzberg",        logo: "🎸", category: "Live-Venue" },
-      { name: "Club Vertigo",          logo: "🎧", category: "Nightclub" },
-      { name: "Watergate",             logo: "🌊", category: "Club" },
-      { name: "about:blank",           logo: "⚫", category: "Techno-Club" },
-      { name: "Sage Beach",            logo: "🏝️", category: "Open-Air" },
-      { name: "Kater Blau",            logo: "🐱", category: "Club" },
-      { name: "SchwuZ",                logo: "🌈", category: "Club" },
-      { name: "Festsaal Kreuzberg",    logo: "🎤", category: "Konzerthalle" },
-      { name: "Sisyphos",              logo: "🌀", category: "Open-Air-Club" }
+      { name: "Rooftop Session @ Waxy's",      logo: "🌆" },
+      { name: "Friday Floor @ Watergate",      logo: "🌊" },
+      { name: "Indie Night @ Lido",            logo: "🎸" },
+      { name: "Saturday Marathon @ Kater Blau",logo: "🐱" },
+      { name: "Sunset Beach @ Müggelsee",      logo: "🏖️" },
+      { name: "Techno All-Nighter @ about:blank", logo: "⚫" },
+      { name: "Full-Moon-Rave @ Sisyphos",     logo: "🌀" },
+      { name: "HipHop Show @ Festsaal",        logo: "🎤" },
+      { name: "Pop Night @ SchwuZ",            logo: "🌈" },
+      { name: "Sommer Opening @ Sage Beach",   logo: "🏝️" },
+      { name: "Open Decks @ Klunkerkranich",   logo: "🏙️" }
     ];
 
+    const LOYALTY_STORAGE_KEY = "ct_loyalty_v2"; // Key-Bump verwirft alte v13-Demo (Späti/Burger)
     function loyaltyRead() {
       try {
-        const raw = localStorage.getItem("ct_loyalty");
+        const raw = localStorage.getItem(LOYALTY_STORAGE_KEY);
         if (raw) return JSON.parse(raw);
+        // Alten Key aufräumen, falls vorhanden
+        localStorage.removeItem("ct_loyalty");
       } catch(e) {}
-      // Initial-Demo-History aus Events, bei denen Max „eingeloggt" war
+      // Initial-Demo-History: Events im Format „Event @ Venue"
       const now = Date.now();
       const day = 86400000;
       const demo = {
         points: 1340,
         history: [
-          { id:  1, merchant: "Klunkerkranich",      logo: "🌆", amount: 12.50, points: 25, ts: now - day*1,  method: "nfc", event: "Rooftop Sessions" },
-          { id:  2, merchant: "Klunkerkranich",      logo: "🌆", amount:  6.80, points: 14, ts: now - day*1,  method: "nfc", event: "Rooftop Sessions" },
-          { id:  3, merchant: "Watergate",           logo: "🌊", amount: 18.00, points: 36, ts: now - day*3,  method: "qr",  event: "Friday Floor" },
-          { id:  4, merchant: "Watergate",           logo: "🌊", amount:  9.50, points: 19, ts: now - day*3,  method: "nfc", event: "Friday Floor" },
-          { id:  5, merchant: "Lido Kreuzberg",      logo: "🎸", amount: 24.50, points: 49, ts: now - day*6,  method: "qr",  event: "Indie Night" },
-          { id:  6, merchant: "Kater Blau",          logo: "🐱", amount: 15.00, points: 30, ts: now - day*9,  method: "nfc", event: "Saturday Marathon" },
-          { id:  7, merchant: "Müggelsee Strandbad", logo: "🏖️", amount: 22.00, points: 44, ts: now - day*14, method: "qr",  event: "Sunset Beach Party" },
-          { id:  8, merchant: "about:blank",         logo: "⚫", amount: 11.00, points: 22, ts: now - day*18, method: "nfc", event: "Techno All-Nighter" },
-          { id:  9, merchant: "Sisyphos",            logo: "🌀", amount: 28.00, points: 56, ts: now - day*24, method: "qr",  event: "Full-Moon-Rave" },
-          { id: 10, merchant: "Festsaal Kreuzberg",  logo: "🎤", amount: 13.50, points: 27, ts: now - day*30, method: "nfc", event: "HipHop Show" },
-          { id: 11, merchant: "SchwuZ",              logo: "🌈", amount:  8.00, points: 16, ts: now - day*38, method: "qr",  event: "Pop Night" },
-          { id: 12, merchant: "Sage Beach",          logo: "🏝️", amount: 19.50, points: 39, ts: now - day*45, method: "nfc", event: "Sommer Opening" }
+          { id:  1, merchant: "Rooftop Session @ Waxy's",       logo: "🌆", amount: 12.50, points: 25, ts: now - day*1,  method: "nfc" },
+          { id:  2, merchant: "Rooftop Session @ Waxy's",       logo: "🌆", amount:  6.80, points: 14, ts: now - day*1,  method: "nfc" },
+          { id:  3, merchant: "Friday Floor @ Watergate",       logo: "🌊", amount: 18.00, points: 36, ts: now - day*3,  method: "qr" },
+          { id:  4, merchant: "Friday Floor @ Watergate",       logo: "🌊", amount:  9.50, points: 19, ts: now - day*3,  method: "nfc" },
+          { id:  5, merchant: "Indie Night @ Lido",             logo: "🎸", amount: 24.50, points: 49, ts: now - day*6,  method: "qr" },
+          { id:  6, merchant: "Saturday Marathon @ Kater Blau", logo: "🐱", amount: 15.00, points: 30, ts: now - day*9,  method: "nfc" },
+          { id:  7, merchant: "Sunset Beach @ Müggelsee",       logo: "🏖️", amount: 22.00, points: 44, ts: now - day*14, method: "qr" },
+          { id:  8, merchant: "Techno All-Nighter @ about:blank", logo: "⚫", amount: 11.00, points: 22, ts: now - day*18, method: "nfc" },
+          { id:  9, merchant: "Full-Moon-Rave @ Sisyphos",      logo: "🌀", amount: 28.00, points: 56, ts: now - day*24, method: "qr" },
+          { id: 10, merchant: "HipHop Show @ Festsaal",         logo: "🎤", amount: 13.50, points: 27, ts: now - day*30, method: "nfc" },
+          { id: 11, merchant: "Pop Night @ SchwuZ",             logo: "🌈", amount:  8.00, points: 16, ts: now - day*38, method: "qr" },
+          { id: 12, merchant: "Open Decks @ Klunkerkranich",    logo: "🏙️", amount: 19.50, points: 39, ts: now - day*45, method: "nfc" }
         ]
       };
       return demo;
     }
     function loyaltyWrite(data) {
-      try { localStorage.setItem("ct_loyalty", JSON.stringify(data)); } catch(e) {}
+      try { localStorage.setItem(LOYALTY_STORAGE_KEY, JSON.stringify(data)); } catch(e) {}
     }
     function tierFor(points) {
       let current = LOYALTY_TIERS[0];
