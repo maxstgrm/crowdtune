@@ -715,6 +715,128 @@
     .spacer { flex: 1; }
     .px-24 { padding-left: 24px; padding-right: 24px; }
 
+    /* --------- Pay / Loyalty --------- */
+    .pay-header { padding: 20px 20px 8px; }
+    .pay-header h1 { font-size: 28px; letter-spacing: -.02em; }
+
+    .loyalty-card {
+      margin: 12px 20px 20px;
+      padding: 22px 20px;
+      border-radius: 22px;
+      background: linear-gradient(135deg, #4c1d95 0%, #6d28d9 35%, #8b5cf6 75%, #a78bfa 100%);
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 18px 50px -18px rgba(139, 92, 246, .55), inset 0 1px 0 rgba(255,255,255,.18);
+    }
+    .loyalty-card::after {
+      content: "";
+      position: absolute; inset: 0;
+      background: radial-gradient(circle at top right, rgba(255,255,255,.25), transparent 60%);
+      pointer-events: none;
+    }
+    .loyalty-card .tier-row { display: flex; justify-content: space-between; align-items: flex-start; position: relative; z-index: 1; }
+    .loyalty-card .label { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; opacity: .85; font-weight: 600; }
+    .loyalty-card .tier-pill {
+      font-size: 11px; letter-spacing: .1em; text-transform: uppercase; font-weight: 700;
+      padding: 5px 10px; border-radius: 99px;
+      background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.22);
+      backdrop-filter: blur(8px);
+    }
+    .loyalty-card .points {
+      font-size: 46px; font-weight: 800; letter-spacing: -.03em;
+      margin-top: 8px; line-height: 1; position: relative; z-index: 1;
+    }
+    .loyalty-card .points-unit { font-size: 15px; font-weight: 600; opacity: .8; margin-left: 6px; }
+    .loyalty-card .progress-wrap {
+      margin-top: 18px; position: relative; z-index: 1;
+    }
+    .loyalty-card .progress-label {
+      display: flex; justify-content: space-between; font-size: 11px; opacity: .9; margin-bottom: 6px; font-weight: 500;
+    }
+    .loyalty-card .progress-track {
+      height: 6px; border-radius: 99px; background: rgba(255,255,255,.2); overflow: hidden;
+    }
+    .loyalty-card .progress-fill {
+      height: 100%; background: #fff; border-radius: 99px;
+      transition: width .6s cubic-bezier(.2,.8,.2,1);
+    }
+
+    .pay-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 0 20px 20px; }
+    .pay-action {
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.09);
+      border-radius: 20px;
+      padding: 22px 16px;
+      display: flex; flex-direction: column; align-items: flex-start; gap: 10px;
+      cursor: pointer;
+      transition: transform .15s ease, background .15s ease;
+      color: #fff;
+      text-align: left;
+    }
+    .pay-action:active { transform: scale(.97); background: rgba(255,255,255,.1); }
+    .pay-action .icon {
+      width: 44px; height: 44px; border-radius: 13px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .pay-action .icon svg { width: 24px; height: 24px; color: #fff; }
+    .pay-action .t { font-size: 15px; font-weight: 700; letter-spacing: -.01em; }
+    .pay-action .s { font-size: 12px; color: rgba(255,255,255,.55); line-height: 1.3; }
+
+    .pay-history { padding: 0 20px 140px; }
+    .pay-history-item {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 4px;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+    }
+    .pay-history-item:last-child { border-bottom: none; }
+    .pay-history-item .logo {
+      width: 42px; height: 42px; border-radius: 12px;
+      background: rgba(255,255,255,.08);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    .pay-history-item .info { flex: 1; min-width: 0; }
+    .pay-history-item .info .merchant { font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+    .pay-history-item .info .meta { font-size: 12px; color: rgba(255,255,255,.5); margin-top: 2px; }
+    .pay-history-item .amount { text-align: right; flex-shrink: 0; }
+    .pay-history-item .amount .eur { font-size: 15px; font-weight: 700; letter-spacing: -.01em; }
+    .pay-history-item .amount .pts {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 11px; font-weight: 600; color: #a78bfa; margin-top: 3px;
+    }
+    .pay-empty {
+      margin: 30px 0; padding: 28px 20px;
+      text-align: center; color: rgba(255,255,255,.55); font-size: 13px;
+      background: rgba(255,255,255,.04); border-radius: 16px;
+    }
+
+    /* Pay-Sheet (Sheet für QR/NFC) */
+    #screen-pay-method .method-hero {
+      padding: 40px 24px 24px;
+      display: flex; flex-direction: column; align-items: center; gap: 18px; text-align: center;
+    }
+    #screen-pay-method .method-hero .big-icon {
+      width: 120px; height: 120px; border-radius: 30px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 20px 50px -15px rgba(139,92,246,.6);
+    }
+    #screen-pay-method .method-hero .big-icon svg { width: 56px; height: 56px; color: #fff; }
+    #screen-pay-method .method-hero h2 { font-size: 24px; font-weight: 700; letter-spacing: -.02em; }
+    #screen-pay-method .method-hero p { font-size: 14px; color: rgba(255,255,255,.6); max-width: 280px; line-height: 1.5; }
+    #screen-pay-method .pulse-ring-pay {
+      width: 180px; height: 180px; border-radius: 50%;
+      border: 2px solid rgba(139,92,246,.4);
+      display: flex; align-items: center; justify-content: center;
+      animation: ctPayPulse 1.6s ease-in-out infinite;
+    }
+    @keyframes ctPayPulse {
+      0%,100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(139,92,246,.45); }
+      50% { transform: scale(1.04); box-shadow: 0 0 0 18px rgba(139,92,246,0); }
+    }
+
     /* --------- Desktop frame hint --------- */
     @media (min-width: 540px) {
       body { background: #000; display: grid; place-items: center; }
@@ -725,7 +847,7 @@
 </head>
 <body>
   <!-- DEBUG: sichtbarer Versions-Stempel, damit wir Cache-Probleme sofort erkennen -->
-  <div id="ct-version-stamp" style="position:fixed;top:4px;left:4px;z-index:99998;font:600 10px -apple-system,sans-serif;color:#fff;background:rgba(99,102,241,0.9);padding:3px 8px;border-radius:8px;pointer-events:none;">Crowdtune v12 • Loading-Fix</div>
+  <div id="ct-version-stamp" style="position:fixed;top:4px;left:4px;z-index:99998;font:600 10px -apple-system,sans-serif;color:#fff;background:rgba(99,102,241,0.9);padding:3px 8px;border-radius:8px;pointer-events:none;">Crowdtune v13 • Bezahlen+Events</div>
 
   <!-- Auth-Loading-Overlay (wird nur gezeigt wenn wir gerade von Spotify zurückkommen) -->
   <div id="ct-auth-loading" style="display:none;position:fixed;inset:0;z-index:99997;background:linear-gradient(135deg,#0f0f1e 0%,#1a1a2e 50%,#2a1a3e 100%);display:none;align-items:center;justify-content:center;flex-direction:column;gap:24px;color:#fff;font:500 16px -apple-system,BlinkMacSystemFont,sans-serif;">
@@ -799,16 +921,16 @@
       <div class="scroll">
         <div class="big-cta" onclick="openSheet('create-party')">
           <div class="label">Los geht's</div>
-          <div class="title">Neue Party starten</div>
+          <div class="title">Neues Event starten</div>
           <div class="muted" style="font-size: 14px; opacity: .85; max-width: 75%;">Erstelle einen Code, lade deine Crew ein und bekomme den perfekten Mix.</div>
           <div class="arrow">→</div>
         </div>
 
         <div class="section-title">
-          <h2>Party beitreten</h2>
+          <h2>Event beitreten</h2>
         </div>
         <div class="join-row">
-          <input type="text" id="join-input" placeholder="Party-Code eingeben" maxlength="6" autocapitalize="characters" />
+          <input type="text" id="join-input" placeholder="Event-Code eingeben" maxlength="6" autocapitalize="characters" />
           <button class="btn btn-ghost join-qr" onclick="openQrScanner()" aria-label="QR-Code scannen">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM17 17h4v4h-4zM14 20h3"/></svg>
           </button>
@@ -817,8 +939,8 @@
         <div class="join-hint">Code eingeben oder <a href="#" onclick="event.preventDefault(); openQrScanner()">QR-Code scannen</a></div>
 
         <div class="section-title">
-          <h2>Deine Parties</h2>
-          <a href="#" onclick="event.preventDefault(); showToast('Alle Parties – coming soon')">Alle</a>
+          <h2>Deine Events</h2>
+          <a href="#" onclick="event.preventDefault(); showToast('Alle Events – coming soon')">Alle</a>
         </div>
         <div class="party-card" onclick="go('party-lobby')">
           <div class="party-art" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">🎉</div>
@@ -854,10 +976,10 @@
         <button class="back-btn" onclick="closeSheet('create-party')">✕</button>
         <div></div>
       </div>
-      <div class="sheet-title">Neue Party erstellen</div>
+      <div class="sheet-title">Neues Event erstellen</div>
       <div class="scroll" style="padding-bottom: 140px;">
         <div class="form-group">
-          <label>Party-Name</label>
+          <label>Event-Name</label>
           <input type="text" class="form-input" id="new-party-name" placeholder="z.B. Saturday Night" />
         </div>
         <div class="form-group">
@@ -890,7 +1012,7 @@
         </div>
       </div>
       <div class="sheet-footer">
-        <button class="btn btn-primary-gradient" onclick="createParty()">Party erstellen</button>
+        <button class="btn btn-primary-gradient" onclick="createParty()">Event erstellen</button>
       </div>
     </section>
 
@@ -898,7 +1020,7 @@
     <section id="screen-party-lobby" class="screen">
       <div class="nav-bar">
         <button class="back-btn" onclick="back()">‹</button>
-        <div class="micro">Party läuft</div>
+        <div class="micro">Event läuft</div>
         <div style="width: 40px;"></div>
       </div>
       <div class="scroll" style="padding-bottom: 160px; padding-left: 0; padding-right: 0;">
@@ -931,9 +1053,9 @@
         </div>
       </div>
       <div class="floating-action">
-        <button class="btn btn-primary-gradient" onclick="startGenerating()">
+        <button class="btn btn-primary-gradient" id="lobby-action-btn" onclick="onLobbyAction()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-          Mix generieren
+          <span id="lobby-action-label">Mix generieren</span>
         </button>
       </div>
     </section>
@@ -1014,7 +1136,7 @@
         <div class="qr-scan-line"></div>
         <div class="qr-hint">
           <div>Richte die Kamera auf den QR-Code</div>
-          <div class="sub">Dein Gastgeber findet den Code in der Party-Lobby</div>
+          <div class="sub">Dein Gastgeber findet den Code in der Event-Lobby</div>
         </div>
       </div>
     </section>
@@ -1035,19 +1157,93 @@
       </div>
     </section>
 
+    <!-- =================== PAY =================== -->
+    <section id="screen-pay" class="screen">
+      <header class="pay-header">
+        <h1>Bezahlen</h1>
+        <p class="muted" style="font-size: 14px; margin-top: 4px;">Zahl bargeldlos und sammel Punkte für jeden Euro.</p>
+      </header>
+
+      <div class="loyalty-card">
+        <div class="tier-row">
+          <div>
+            <div class="label">Punktestand</div>
+          </div>
+          <div class="tier-pill" id="loyalty-tier">Bronze Member</div>
+        </div>
+        <div class="points"><span id="loyalty-points">0</span><span class="points-unit">Pkt</span></div>
+        <div class="progress-wrap">
+          <div class="progress-label">
+            <span id="loyalty-progress-label">0 / 500 bis Silver</span>
+            <span id="loyalty-progress-pct">0%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" id="loyalty-progress-fill" style="width: 0%;"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pay-actions">
+        <button class="pay-action" onclick="startPayment('qr')">
+          <div class="icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM17 17h4v4h-4zM14 20h3"/></svg>
+          </div>
+          <div class="t">QR scannen</div>
+          <div class="s">An der Kasse den QR-Code scannen</div>
+        </button>
+        <button class="pay-action" onclick="startPayment('nfc')">
+          <div class="icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.5 0 10-4.5 10-10S17.5 2 12 2"/><path d="M8 16c2.2 0 4-1.8 4-4s-1.8-4-4-4"/><path d="M4 20c4.4 0 8-3.6 8-8S8.4 4 4 4"/></svg>
+          </div>
+          <div class="t">NFC halten</div>
+          <div class="s">Dein Gerät an das Terminal halten</div>
+        </button>
+      </div>
+
+      <div class="section-title" style="padding: 0 20px;">
+        <h2>Bezahlhistorie</h2>
+        <a href="#" onclick="event.preventDefault(); showToast('Alle Zahlungen – coming soon')">Alle</a>
+      </div>
+      <div class="scroll pay-history" id="pay-history">
+        <!-- populated by JS -->
+      </div>
+    </section>
+
+    <!-- =================== PAY METHOD (QR/NFC Bezahl-Overlay) =================== -->
+    <section id="screen-pay-method" class="screen">
+      <div class="nav-bar">
+        <button class="back-btn" onclick="cancelPayment()">‹</button>
+        <div class="micro" id="pay-method-title">Bezahlen</div>
+        <div style="width: 40px;"></div>
+      </div>
+      <div class="method-hero">
+        <div class="pulse-ring-pay">
+          <div class="big-icon" id="pay-method-icon">
+            <!-- Icon wird via JS gesetzt -->
+          </div>
+        </div>
+        <h2 id="pay-method-heading">Halte dein Gerät ans Terminal</h2>
+        <p id="pay-method-sub">Die Zahlung wird automatisch ausgelöst, sobald die Verbindung steht.</p>
+        <div style="margin-top: 20px; font-size: 13px; color: rgba(255,255,255,.5);">
+          Tippe hier, um die Zahlung zu simulieren →
+        </div>
+        <button class="btn btn-primary-gradient" style="margin-top: 12px;" onclick="confirmPayment()">Zahlung simulieren</button>
+      </div>
+    </section>
+
     <!-- =================== TAB BAR =================== -->
     <nav id="tab-bar" class="hidden">
       <button data-tab="home" onclick="go('home')" class="active">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9M5 10v10h14V10"/></svg>
         Home
       </button>
+      <button data-tab="pay" onclick="go('pay')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="13" rx="2"/><path d="M2 11h20"/><path d="M6 15h4"/></svg>
+        Bezahlen
+      </button>
       <button data-tab="events" onclick="go('events')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
         Events
-      </button>
-      <button data-tab="profile" onclick="showToast('Profil – coming soon')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/></svg>
-        Profil
       </button>
     </nav>
 
@@ -1127,6 +1323,7 @@
       if (nextEl) { nextEl.classList.add("active"); nextEl.classList.remove("past"); }
       state.screenStack.push(screen);
       updateTabBar(screen);
+      if (screen === "pay") renderLoyalty();
     }
 
     function back() {
@@ -1149,12 +1346,171 @@
 
     function updateTabBar(screen) {
       const tabBar = document.getElementById("tab-bar");
-      const tabScreens = ["home", "events"];
+      const tabScreens = ["home", "pay", "events"];
       if (tabScreens.includes(screen)) tabBar.classList.remove("hidden");
       else tabBar.classList.add("hidden");
       tabBar.querySelectorAll("button[data-tab]").forEach(b => {
         b.classList.toggle("active", b.dataset.tab === screen);
       });
+    }
+
+    // ============ Pay / Loyalty ============
+    const LOYALTY_TIERS = [
+      { name: "Bronze",   min: 0,    color: "#cd7f32" },
+      { name: "Silver",   min: 500,  color: "#c0c0c0" },
+      { name: "Gold",     min: 2000, color: "#f5c542" },
+      { name: "Platinum", min: 5000, color: "#e5e4e2" }
+    ];
+    const MOCK_MERCHANTS = [
+      { name: "Späti am Kotti",   logo: "🍺", category: "Getränke" },
+      { name: "Burger Bros",      logo: "🍔", category: "Food" },
+      { name: "Cafe Lumen",       logo: "☕", category: "Cafe" },
+      { name: "Club Vertigo",     logo: "🎧", category: "Nightlife" },
+      { name: "Pizzeria Bella",   logo: "🍕", category: "Food" },
+      { name: "Taxi Berlin",      logo: "🚕", category: "Transport" },
+      { name: "Record Shop",      logo: "🎵", category: "Shopping" }
+    ];
+
+    function loyaltyRead() {
+      try {
+        const raw = localStorage.getItem("ct_loyalty");
+        if (raw) return JSON.parse(raw);
+      } catch(e) {}
+      // Initial-Demo-History, damit nicht leer
+      const now = Date.now();
+      const day = 86400000;
+      const demo = {
+        points: 1340,
+        history: [
+          { id: 1, merchant: "Club Vertigo",   logo: "🎧", amount: 24.50, points: 49, ts: now - day*1, method: "nfc" },
+          { id: 2, merchant: "Späti am Kotti", logo: "🍺", amount:  6.80, points: 14, ts: now - day*2, method: "qr" },
+          { id: 3, merchant: "Burger Bros",    logo: "🍔", amount: 13.90, points: 28, ts: now - day*4, method: "qr" },
+          { id: 4, merchant: "Cafe Lumen",     logo: "☕", amount:  4.20, points:  8, ts: now - day*6, method: "nfc" },
+          { id: 5, merchant: "Taxi Berlin",    logo: "🚕", amount: 18.00, points: 36, ts: now - day*9, method: "nfc" }
+        ]
+      };
+      return demo;
+    }
+    function loyaltyWrite(data) {
+      try { localStorage.setItem("ct_loyalty", JSON.stringify(data)); } catch(e) {}
+    }
+    function tierFor(points) {
+      let current = LOYALTY_TIERS[0];
+      let next = null;
+      for (let i = 0; i < LOYALTY_TIERS.length; i++) {
+        if (points >= LOYALTY_TIERS[i].min) current = LOYALTY_TIERS[i];
+        else { next = LOYALTY_TIERS[i]; break; }
+      }
+      return { current, next };
+    }
+
+    function renderLoyalty() {
+      const data = loyaltyRead();
+      const pts = data.points || 0;
+      const { current, next } = tierFor(pts);
+      const tierEl = document.getElementById("loyalty-tier");
+      const ptsEl = document.getElementById("loyalty-points");
+      const pctEl = document.getElementById("loyalty-progress-pct");
+      const fillEl = document.getElementById("loyalty-progress-fill");
+      const lblEl = document.getElementById("loyalty-progress-label");
+      if (tierEl) tierEl.textContent = current.name + " Member";
+      if (ptsEl) ptsEl.textContent = pts.toLocaleString("de-DE");
+      if (next) {
+        const span = next.min - current.min;
+        const done = pts - current.min;
+        const pct = Math.max(0, Math.min(100, Math.round((done / span) * 100)));
+        if (pctEl) pctEl.textContent = pct + "%";
+        if (fillEl) fillEl.style.width = pct + "%";
+        if (lblEl) lblEl.textContent = pts.toLocaleString("de-DE") + " / " + next.min.toLocaleString("de-DE") + " bis " + next.name;
+      } else {
+        if (pctEl) pctEl.textContent = "Max";
+        if (fillEl) fillEl.style.width = "100%";
+        if (lblEl) lblEl.textContent = "Höchster Status erreicht";
+      }
+      renderPayHistory(data.history || []);
+    }
+
+    function formatRelativeDate(ts) {
+      const diffMs = Date.now() - ts;
+      const min = Math.floor(diffMs / 60000);
+      if (min < 1) return "Gerade eben";
+      if (min < 60) return "vor " + min + " Min";
+      const h = Math.floor(min / 60);
+      if (h < 24) return "vor " + h + " Std";
+      const d = Math.floor(h / 24);
+      if (d === 1) return "Gestern";
+      if (d < 7) return "vor " + d + " Tagen";
+      const date = new Date(ts);
+      return date.toLocaleDateString("de-DE", { day: "2-digit", month: "short" });
+    }
+
+    function renderPayHistory(history) {
+      const el = document.getElementById("pay-history");
+      if (!el) return;
+      if (!history.length) {
+        el.innerHTML = '<div class="pay-empty">Noch keine Zahlungen. Deine erste Bezahlung bringt dir bis zu 50 Punkte.</div>';
+        return;
+      }
+      el.innerHTML = history.map(h => `
+        <div class="pay-history-item">
+          <div class="logo">${h.logo || "💳"}</div>
+          <div class="info">
+            <div class="merchant">${h.merchant}</div>
+            <div class="meta">${formatRelativeDate(h.ts)} · ${h.method === "nfc" ? "NFC" : "QR"}</div>
+          </div>
+          <div class="amount">
+            <div class="eur">${h.amount.toFixed(2).replace(".", ",")} €</div>
+            <div class="pts">+${h.points} Pkt</div>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    let pendingPayment = null;
+    function startPayment(method) {
+      pendingPayment = { method };
+      const titleEl = document.getElementById("pay-method-title");
+      const iconEl = document.getElementById("pay-method-icon");
+      const headEl = document.getElementById("pay-method-heading");
+      const subEl  = document.getElementById("pay-method-sub");
+      if (method === "qr") {
+        titleEl.textContent = "QR scannen";
+        headEl.textContent = "Scanne den QR-Code";
+        subEl.textContent  = "Richte die Kamera auf den QR-Code an der Kasse. Die Zahlung bestätigt sich automatisch.";
+        iconEl.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM17 17h4v4h-4zM14 20h3"/></svg>';
+      } else {
+        titleEl.textContent = "NFC halten";
+        headEl.textContent = "Halte dein Gerät ans Terminal";
+        subEl.textContent  = "Die Zahlung löst sich automatisch aus, sobald die Verbindung steht.";
+        iconEl.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.5 0 10-4.5 10-10S17.5 2 12 2"/><path d="M8 16c2.2 0 4-1.8 4-4s-1.8-4-4-4"/><path d="M4 20c4.4 0 8-3.6 8-8S8.4 4 4 4"/></svg>';
+      }
+      go("pay-method");
+    }
+    function cancelPayment() {
+      pendingPayment = null;
+      back();
+    }
+    function confirmPayment() {
+      if (!pendingPayment) return;
+      const merchant = MOCK_MERCHANTS[Math.floor(Math.random() * MOCK_MERCHANTS.length)];
+      const amount = Math.round((Math.random() * 45 + 3) * 100) / 100; // 3–48 €
+      const points = Math.max(1, Math.round(amount * 2)); // 2 Punkte pro Euro
+      const entry = {
+        id: Date.now(),
+        merchant: merchant.name,
+        logo: merchant.logo,
+        amount, points,
+        ts: Date.now(),
+        method: pendingPayment.method
+      };
+      const data = loyaltyRead();
+      data.points = (data.points || 0) + points;
+      data.history = [entry].concat(data.history || []);
+      loyaltyWrite(data);
+      pendingPayment = null;
+      back();
+      renderLoyalty();
+      showToast(`✓ ${amount.toFixed(2).replace(".", ",")} € · +${points} Punkte`);
     }
 
     // ============ QR Scanner (mock) ============
@@ -1168,7 +1524,7 @@
           state.currentCode = fakeCode;
           document.getElementById("code-text").textContent = fakeCode;
           state.guests = MOCK_GUESTS.slice(0, 2);
-          showToast(`Party ${fakeCode} gefunden ✓`);
+          showToast(`Event ${fakeCode} gefunden ✓`);
           setTimeout(() => {
             go("party-lobby");
             renderGuests();
@@ -1680,7 +2036,7 @@
         .single();
       if (error) {
         console.error("[Crowdtune] create party failed", error);
-        showToast("Party konnte nicht gespeichert werden");
+        showToast("Event konnte nicht gespeichert werden");
         return null;
       }
       await upsertSelfAsMember(data.id);
@@ -1927,7 +2283,7 @@
         unsubscribeFromPartyMembers();
         const party = await findPartyByCode(state.currentCode);
         if (!party) {
-          showToast("Party nicht gefunden");
+          showToast("Event nicht gefunden");
           return;
         }
         state.party = party;
@@ -1981,6 +2337,35 @@
         </div>
       `).join("");
       document.getElementById("guest-count-title").textContent = `${state.guests.length} Person${state.guests.length === 1 ? "" : "en"}`;
+      updateLobbyAction();
+    }
+
+    // Button-Text + Action im Event-Lobby-Screen abhängig davon ob User Host ist
+    function updateLobbyAction() {
+      const btn = document.getElementById("lobby-action-btn");
+      const lbl = document.getElementById("lobby-action-label");
+      if (!btn || !lbl) return;
+      if (state.isHost) {
+        lbl.textContent = "Mix generieren";
+        btn.dataset.mode = "generate";
+      } else {
+        lbl.textContent = "Mix ansehen";
+        btn.dataset.mode = "view";
+      }
+    }
+
+    function onLobbyAction() {
+      if (state.isHost) {
+        startGenerating();
+      } else {
+        // Gast: direkt zum Ergebnis ohne Generating-Animation
+        if (state.guests.length < 2) {
+          showToast("Warte bis der Host den Mix gestartet hat");
+          return;
+        }
+        renderResult();
+        go("result");
+      }
     }
 
     function copyCode() {
