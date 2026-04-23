@@ -727,6 +727,17 @@
       position: relative;
       overflow: hidden;
       box-shadow: 0 18px 50px -18px rgba(139, 92, 246, .55), inset 0 1px 0 rgba(255,255,255,.18);
+      cursor: pointer;
+      transition: transform .15s ease;
+    }
+    .loyalty-card:active { transform: scale(.98); }
+    .loyalty-card .tier-chevron {
+      margin-left: 6px; opacity: .8; font-weight: 400;
+    }
+    .loyalty-card-hint {
+      position: absolute; bottom: 8px; right: 14px;
+      font-size: 11px; opacity: .7; font-weight: 500; letter-spacing: .02em;
+      z-index: 1;
     }
     .loyalty-card::after {
       content: "";
@@ -837,6 +848,103 @@
       50% { transform: scale(1.04); box-shadow: 0 0 0 18px rgba(139,92,246,0); }
     }
 
+    /* --------- Loyalty Benefits Screen --------- */
+    .benefits-hero {
+      padding: 30px 20px 20px;
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+    }
+    .benefits-tier-badge {
+      width: 96px; height: 96px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 36px; font-weight: 800; letter-spacing: -.02em;
+      color: #fff;
+      margin-bottom: 6px;
+      box-shadow: 0 12px 30px -6px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.3);
+    }
+    .benefits-tier-badge.bronze   { background: linear-gradient(135deg, #a36431, #cd7f32 60%, #e39e5c); }
+    .benefits-tier-badge.silver   { background: linear-gradient(135deg, #8a8a8a, #c0c0c0 60%, #e5e5e5); }
+    .benefits-tier-badge.gold     { background: linear-gradient(135deg, #b8860b, #f5c542 60%, #ffd96b); }
+    .benefits-tier-badge.platinum { background: linear-gradient(135deg, #6b7280, #d1d5db 45%, #f3f4f6 90%); color: #1e1b2e; }
+    .benefits-tier-name { font-size: 22px; font-weight: 700; letter-spacing: -.01em; }
+    .benefits-tier-sub { font-size: 13px; color: rgba(255,255,255,.55); }
+
+    .benefits-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 8px; }
+    .benefit-item {
+      display: flex; align-items: flex-start; gap: 14px;
+      padding: 14px 16px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: 16px;
+    }
+    .benefit-item .b-icon {
+      width: 40px; height: 40px; border-radius: 11px;
+      background: linear-gradient(135deg,#6366f1,#8b5cf6);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    .benefit-item .b-info { flex: 1; }
+    .benefit-item .b-title { font-size: 14px; font-weight: 600; letter-spacing: -.01em; }
+    .benefit-item .b-desc { font-size: 12px; color: rgba(255,255,255,.55); margin-top: 3px; line-height: 1.35; }
+    .benefit-item.locked { opacity: .45; }
+    .benefit-item.locked .b-icon { background: rgba(255,255,255,.1); }
+    .benefit-item.locked::after { content: "🔒"; margin-left: 6px; font-size: 14px; opacity: .7; }
+
+    .next-tier-card {
+      padding: 16px 18px;
+      background: rgba(139,92,246,.08);
+      border: 1px solid rgba(139,92,246,.25);
+      border-radius: 16px;
+    }
+    .next-tier-card.maxed {
+      background: rgba(255,255,255,.05); border-color: rgba(255,255,255,.1);
+    }
+    .next-tier-card .nt-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .next-tier-card .nt-name { font-size: 15px; font-weight: 700; }
+    .next-tier-card .nt-meta { font-size: 12px; color: rgba(255,255,255,.55); }
+    .next-tier-card .nt-progress-track {
+      height: 6px; border-radius: 99px; background: rgba(255,255,255,.1); overflow: hidden; margin-bottom: 10px;
+    }
+    .next-tier-card .nt-progress-fill {
+      height: 100%; background: linear-gradient(90deg,#6366f1,#8b5cf6); border-radius: 99px;
+    }
+    .next-tier-card .nt-preview { font-size: 12px; color: rgba(255,255,255,.7); line-height: 1.45; }
+
+    .all-tiers { display: flex; flex-direction: column; gap: 8px; }
+    .tier-row-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 14px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: 14px;
+    }
+    .tier-row-item.current {
+      background: rgba(139,92,246,.12);
+      border-color: rgba(139,92,246,.35);
+    }
+    .tier-row-item .t-dot {
+      width: 28px; height: 28px; border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .tier-row-item .t-info { flex: 1; }
+    .tier-row-item .t-name { font-size: 14px; font-weight: 600; }
+    .tier-row-item .t-min { font-size: 11px; color: rgba(255,255,255,.5); margin-top: 1px; }
+    .tier-row-item .t-mark { font-size: 11px; color: #a78bfa; font-weight: 600; }
+
+    /* --------- Profile --------- */
+    .profile-avatar-big {
+      width: 110px; height: 110px; border-radius: 50%;
+      background: linear-gradient(135deg,#6366f1,#8b5cf6);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 42px; font-weight: 700; letter-spacing: -.02em;
+      color: #fff;
+      margin-top: 36px;
+      background-size: cover; background-position: center;
+      box-shadow: 0 18px 40px -10px rgba(139,92,246,.5);
+    }
+    .profile-name { font-size: 24px; font-weight: 700; letter-spacing: -.02em; margin-top: 18px; }
+    .profile-sub { font-size: 14px; color: rgba(255,255,255,.55); margin-top: 4px; }
+
     /* --------- Desktop frame hint --------- */
     @media (min-width: 540px) {
       body { background: #000; display: grid; place-items: center; }
@@ -847,7 +955,7 @@
 </head>
 <body>
   <!-- DEBUG: sichtbarer Versions-Stempel, damit wir Cache-Probleme sofort erkennen -->
-  <div id="ct-version-stamp" style="position:fixed;top:4px;left:4px;z-index:99998;font:600 10px -apple-system,sans-serif;color:#fff;background:rgba(99,102,241,0.9);padding:3px 8px;border-radius:8px;pointer-events:none;">Crowdtune v13 • Bezahlen+Events</div>
+  <div id="ct-version-stamp" style="position:fixed;top:4px;left:4px;z-index:99998;font:600 10px -apple-system,sans-serif;color:#fff;background:rgba(99,102,241,0.9);padding:3px 8px;border-radius:8px;pointer-events:none;">Crowdtune v14 • Benefits+Profil</div>
 
   <!-- Auth-Loading-Overlay (wird nur gezeigt wenn wir gerade von Spotify zurückkommen) -->
   <div id="ct-auth-loading" style="display:none;position:fixed;inset:0;z-index:99997;background:linear-gradient(135deg,#0f0f1e 0%,#1a1a2e 50%,#2a1a3e 100%);display:none;align-items:center;justify-content:center;flex-direction:column;gap:24px;color:#fff;font:500 16px -apple-system,BlinkMacSystemFont,sans-serif;">
@@ -916,7 +1024,7 @@
           <span class="hi">Hallo,</span>
           <span class="name" id="user-name">Max</span>
         </div>
-        <div class="avatar" id="user-avatar">M</div>
+        <div class="avatar" id="user-avatar" onclick="go('profile')" role="button" aria-label="Profil öffnen" style="cursor:pointer;">M</div>
       </header>
       <div class="scroll">
         <div class="big-cta" onclick="openSheet('create-party')">
@@ -1159,53 +1267,117 @@
 
     <!-- =================== PAY =================== -->
     <section id="screen-pay" class="screen">
-      <header class="pay-header">
-        <h1>Bezahlen</h1>
-        <p class="muted" style="font-size: 14px; margin-top: 4px;">Zahl bargeldlos und sammel Punkte für jeden Euro.</p>
-      </header>
+      <div class="scroll" style="padding: 0 0 140px;">
+        <header class="pay-header">
+          <h1>Bezahlen</h1>
+          <p class="muted" style="font-size: 14px; margin-top: 4px;">Zahl bargeldlos auf Events und sammel Punkte.</p>
+        </header>
 
-      <div class="loyalty-card">
-        <div class="tier-row">
-          <div>
-            <div class="label">Punktestand</div>
+        <div class="loyalty-card" id="loyalty-card" onclick="go('loyalty-benefits')" role="button" aria-label="Benefits ansehen">
+          <div class="tier-row">
+            <div>
+              <div class="label">Punktestand</div>
+            </div>
+            <div class="tier-pill" id="loyalty-tier">
+              <span id="loyalty-tier-text">Bronze Member</span>
+              <span class="tier-chevron">›</span>
+            </div>
           </div>
-          <div class="tier-pill" id="loyalty-tier">Bronze Member</div>
+          <div class="points"><span id="loyalty-points">0</span><span class="points-unit">Pkt</span></div>
+          <div class="progress-wrap">
+            <div class="progress-label">
+              <span id="loyalty-progress-label">0 / 500 bis Silver</span>
+              <span id="loyalty-progress-pct">0%</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" id="loyalty-progress-fill" style="width: 0%;"></div>
+            </div>
+          </div>
+          <div class="loyalty-card-hint">Tippen für Vorteile ›</div>
         </div>
-        <div class="points"><span id="loyalty-points">0</span><span class="points-unit">Pkt</span></div>
-        <div class="progress-wrap">
-          <div class="progress-label">
-            <span id="loyalty-progress-label">0 / 500 bis Silver</span>
-            <span id="loyalty-progress-pct">0%</span>
-          </div>
-          <div class="progress-track">
-            <div class="progress-fill" id="loyalty-progress-fill" style="width: 0%;"></div>
-          </div>
+
+        <div class="pay-actions">
+          <button class="pay-action" onclick="startPayment('qr')">
+            <div class="icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM17 17h4v4h-4zM14 20h3"/></svg>
+            </div>
+            <div class="t">QR scannen</div>
+            <div class="s">An der Kasse den QR-Code scannen</div>
+          </button>
+          <button class="pay-action" onclick="startPayment('nfc')">
+            <div class="icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.5 0 10-4.5 10-10S17.5 2 12 2"/><path d="M8 16c2.2 0 4-1.8 4-4s-1.8-4-4-4"/><path d="M4 20c4.4 0 8-3.6 8-8S8.4 4 4 4"/></svg>
+            </div>
+            <div class="t">NFC halten</div>
+            <div class="s">Dein Gerät an das Terminal halten</div>
+          </button>
+        </div>
+
+        <div class="section-title" style="padding: 0 20px;">
+          <h2>Bezahlhistorie</h2>
+          <span id="pay-history-count" class="muted" style="font-size: 13px; color: rgba(255,255,255,.5);"></span>
+        </div>
+        <div class="pay-history" id="pay-history">
+          <!-- populated by JS -->
+        </div>
+        <div id="pay-history-more-wrap" style="padding: 10px 20px 0;">
+          <button class="btn btn-ghost" id="pay-history-more-btn" onclick="expandPayHistory()" style="width: 100%; justify-content: center;">
+            Historie erweitern
+          </button>
         </div>
       </div>
+    </section>
 
-      <div class="pay-actions">
-        <button class="pay-action" onclick="startPayment('qr')">
-          <div class="icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM17 17h4v4h-4zM14 20h3"/></svg>
-          </div>
-          <div class="t">QR scannen</div>
-          <div class="s">An der Kasse den QR-Code scannen</div>
-        </button>
-        <button class="pay-action" onclick="startPayment('nfc')">
-          <div class="icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.5 0 10-4.5 10-10S17.5 2 12 2"/><path d="M8 16c2.2 0 4-1.8 4-4s-1.8-4-4-4"/><path d="M4 20c4.4 0 8-3.6 8-8S8.4 4 4 4"/></svg>
-          </div>
-          <div class="t">NFC halten</div>
-          <div class="s">Dein Gerät an das Terminal halten</div>
-        </button>
+    <!-- =================== LOYALTY BENEFITS =================== -->
+    <section id="screen-loyalty-benefits" class="screen">
+      <div class="nav-bar">
+        <button class="back-btn" onclick="back()">‹</button>
+        <div class="micro">Mitglieds-Vorteile</div>
+        <div style="width: 40px;"></div>
       </div>
+      <div class="scroll" style="padding: 0 20px 140px;">
+        <div class="benefits-hero">
+          <div class="benefits-tier-badge" id="benefits-current-badge">Bronze</div>
+          <div class="benefits-tier-name" id="benefits-current-name">Bronze Member</div>
+          <div class="benefits-tier-sub" id="benefits-current-sub">Dein aktueller Status</div>
+        </div>
 
-      <div class="section-title" style="padding: 0 20px;">
-        <h2>Bezahlhistorie</h2>
-        <a href="#" onclick="event.preventDefault(); showToast('Alle Zahlungen – coming soon')">Alle</a>
+        <div class="section-title">
+          <h2>Deine aktuellen Vorteile</h2>
+        </div>
+        <div class="benefits-list" id="benefits-current-list"></div>
+
+        <div class="section-title" style="margin-top: 10px;">
+          <h2>Nächster Tier</h2>
+        </div>
+        <div class="next-tier-card" id="benefits-next-card"></div>
+
+        <div class="section-title" style="margin-top: 24px;">
+          <h2>Alle Tiers</h2>
+        </div>
+        <div class="all-tiers" id="benefits-all-tiers"></div>
       </div>
-      <div class="scroll pay-history" id="pay-history">
-        <!-- populated by JS -->
+    </section>
+
+    <!-- =================== PROFILE =================== -->
+    <section id="screen-profile" class="screen">
+      <div class="nav-bar">
+        <button class="back-btn" onclick="back()">‹</button>
+        <div class="micro">Profil</div>
+        <div style="width: 40px;"></div>
+      </div>
+      <div class="scroll" style="padding: 0 20px 140px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
+        <div class="profile-avatar-big" id="profile-avatar-big">M</div>
+        <div class="profile-name" id="profile-name">Du</div>
+        <div class="profile-sub" id="profile-sub">maxvoigt96@gmail.com</div>
+        <div style="margin-top: 40px; padding: 24px 20px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); border-radius: 18px; max-width: 320px;">
+          <div style="font-size: 42px; margin-bottom: 10px;">🚧</div>
+          <div style="font-size: 17px; font-weight: 700; margin-bottom: 6px;">Coming Soon</div>
+          <div style="font-size: 14px; color: rgba(255,255,255,.6); line-height: 1.5;">
+            Profil-Einstellungen, verbundene Dienste und Privatsphäre-Optionen gibts in einem der nächsten Updates.
+          </div>
+        </div>
+        <button class="btn btn-ghost" style="margin-top: 24px;" onclick="back()">Zurück</button>
       </div>
     </section>
 
@@ -1323,7 +1495,9 @@
       if (nextEl) { nextEl.classList.add("active"); nextEl.classList.remove("past"); }
       state.screenStack.push(screen);
       updateTabBar(screen);
-      if (screen === "pay") renderLoyalty();
+      if (screen === "pay") { payHistoryExpanded = false; renderLoyalty(); }
+      if (screen === "loyalty-benefits") renderBenefits();
+      if (screen === "profile") renderProfile();
     }
 
     function back() {
@@ -1356,19 +1530,56 @@
 
     // ============ Pay / Loyalty ============
     const LOYALTY_TIERS = [
-      { name: "Bronze",   min: 0,    color: "#cd7f32" },
-      { name: "Silver",   min: 500,  color: "#c0c0c0" },
-      { name: "Gold",     min: 2000, color: "#f5c542" },
-      { name: "Platinum", min: 5000, color: "#e5e4e2" }
+      {
+        key: "bronze", name: "Bronze", min: 0,
+        perks: [
+          { icon: "💳", title: "Bargeldloses Bezahlen",      desc: "QR- und NFC-Zahlung auf allen Crowdtune-Events." },
+          { icon: "🎵", title: "Mix-Voting",                  desc: "Song-Wünsche einreichen und im Crowd-Mix mitbestimmen." },
+          { icon: "🎟️", title: "Digitale Event-Tickets",      desc: "Alle Tickets zentral in der App." }
+        ]
+      },
+      {
+        key: "silver", name: "Silver", min: 500,
+        perks: [
+          { icon: "🥂", title: "10 % auf Getränke",           desc: "Rabatt auf alle Bestellungen an der Bar direkt beim Bezahlen." },
+          { icon: "⚡", title: "Express Entry",                desc: "Schnellerer Einlass über die Crowdtune-Spur, keine Warteschlange." },
+          { icon: "🎁", title: "2x Punkte auf neuen Events",  desc: "Doppelte Punkte bei deinem ersten Besuch auf einem Event." }
+        ]
+      },
+      {
+        key: "gold", name: "Gold", min: 2000,
+        perks: [
+          { icon: "🎫", title: "24h Early-Access für Tickets",desc: "Tickets einen Tag vor dem öffentlichen Release kaufen." },
+          { icon: "🍾", title: "Willkommens-Drink",           desc: "Beim Einchecken auf Partner-Events gibts einen Drink aufs Haus." },
+          { icon: "💿", title: "Priority im Event-Mix",       desc: "Deine Song-Wünsche bekommen höheres Gewicht im Crowd-Mix." },
+          { icon: "👕", title: "15 % Merch-Rabatt",           desc: "Auf offizielles Merch aller Crowdtune-Partner-Clubs." }
+        ]
+      },
+      {
+        key: "platinum", name: "Platinum", min: 5000,
+        perks: [
+          { icon: "🥇", title: "VIP-Lounge-Zugang",           desc: "Zutritt zur Crowdtune-VIP-Zone auf teilnehmenden Events." },
+          { icon: "🎧", title: "Meet & Greet",                desc: "Verlosung von Meet & Greets mit den Headlinern auserwählter Events." },
+          { icon: "👥", title: "+1 Plus-One",                  desc: "Nimm eine Begleitung kostenlos auf ausgewählten Events mit." },
+          { icon: "🎶", title: "Eigener Mix-Slot",            desc: "Deine Top-Tracks werden garantiert in jedem Event-Mix gespielt." },
+          { icon: "📅", title: "Exklusive Platinum-Events",   desc: "Zutritt zu privaten Crowdtune-Nights nur für Platinum-Mitglieder." }
+        ]
+      }
     ];
+
+    // Mock-Händler im Event/Club-Kontext (Namen passend zu den Event-Einträgen unten)
     const MOCK_MERCHANTS = [
-      { name: "Späti am Kotti",   logo: "🍺", category: "Getränke" },
-      { name: "Burger Bros",      logo: "🍔", category: "Food" },
-      { name: "Cafe Lumen",       logo: "☕", category: "Cafe" },
-      { name: "Club Vertigo",     logo: "🎧", category: "Nightlife" },
-      { name: "Pizzeria Bella",   logo: "🍕", category: "Food" },
-      { name: "Taxi Berlin",      logo: "🚕", category: "Transport" },
-      { name: "Record Shop",      logo: "🎵", category: "Shopping" }
+      { name: "Klunkerkranich",        logo: "🌆", category: "Rooftop-Bar" },
+      { name: "Müggelsee Strandbad",   logo: "🏖️", category: "Open-Air" },
+      { name: "Lido Kreuzberg",        logo: "🎸", category: "Live-Venue" },
+      { name: "Club Vertigo",          logo: "🎧", category: "Nightclub" },
+      { name: "Watergate",             logo: "🌊", category: "Club" },
+      { name: "about:blank",           logo: "⚫", category: "Techno-Club" },
+      { name: "Sage Beach",            logo: "🏝️", category: "Open-Air" },
+      { name: "Kater Blau",            logo: "🐱", category: "Club" },
+      { name: "SchwuZ",                logo: "🌈", category: "Club" },
+      { name: "Festsaal Kreuzberg",    logo: "🎤", category: "Konzerthalle" },
+      { name: "Sisyphos",              logo: "🌀", category: "Open-Air-Club" }
     ];
 
     function loyaltyRead() {
@@ -1376,17 +1587,24 @@
         const raw = localStorage.getItem("ct_loyalty");
         if (raw) return JSON.parse(raw);
       } catch(e) {}
-      // Initial-Demo-History, damit nicht leer
+      // Initial-Demo-History aus Events, bei denen Max „eingeloggt" war
       const now = Date.now();
       const day = 86400000;
       const demo = {
         points: 1340,
         history: [
-          { id: 1, merchant: "Club Vertigo",   logo: "🎧", amount: 24.50, points: 49, ts: now - day*1, method: "nfc" },
-          { id: 2, merchant: "Späti am Kotti", logo: "🍺", amount:  6.80, points: 14, ts: now - day*2, method: "qr" },
-          { id: 3, merchant: "Burger Bros",    logo: "🍔", amount: 13.90, points: 28, ts: now - day*4, method: "qr" },
-          { id: 4, merchant: "Cafe Lumen",     logo: "☕", amount:  4.20, points:  8, ts: now - day*6, method: "nfc" },
-          { id: 5, merchant: "Taxi Berlin",    logo: "🚕", amount: 18.00, points: 36, ts: now - day*9, method: "nfc" }
+          { id:  1, merchant: "Klunkerkranich",      logo: "🌆", amount: 12.50, points: 25, ts: now - day*1,  method: "nfc", event: "Rooftop Sessions" },
+          { id:  2, merchant: "Klunkerkranich",      logo: "🌆", amount:  6.80, points: 14, ts: now - day*1,  method: "nfc", event: "Rooftop Sessions" },
+          { id:  3, merchant: "Watergate",           logo: "🌊", amount: 18.00, points: 36, ts: now - day*3,  method: "qr",  event: "Friday Floor" },
+          { id:  4, merchant: "Watergate",           logo: "🌊", amount:  9.50, points: 19, ts: now - day*3,  method: "nfc", event: "Friday Floor" },
+          { id:  5, merchant: "Lido Kreuzberg",      logo: "🎸", amount: 24.50, points: 49, ts: now - day*6,  method: "qr",  event: "Indie Night" },
+          { id:  6, merchant: "Kater Blau",          logo: "🐱", amount: 15.00, points: 30, ts: now - day*9,  method: "nfc", event: "Saturday Marathon" },
+          { id:  7, merchant: "Müggelsee Strandbad", logo: "🏖️", amount: 22.00, points: 44, ts: now - day*14, method: "qr",  event: "Sunset Beach Party" },
+          { id:  8, merchant: "about:blank",         logo: "⚫", amount: 11.00, points: 22, ts: now - day*18, method: "nfc", event: "Techno All-Nighter" },
+          { id:  9, merchant: "Sisyphos",            logo: "🌀", amount: 28.00, points: 56, ts: now - day*24, method: "qr",  event: "Full-Moon-Rave" },
+          { id: 10, merchant: "Festsaal Kreuzberg",  logo: "🎤", amount: 13.50, points: 27, ts: now - day*30, method: "nfc", event: "HipHop Show" },
+          { id: 11, merchant: "SchwuZ",              logo: "🌈", amount:  8.00, points: 16, ts: now - day*38, method: "qr",  event: "Pop Night" },
+          { id: 12, merchant: "Sage Beach",          logo: "🏝️", amount: 19.50, points: 39, ts: now - day*45, method: "nfc", event: "Sommer Opening" }
         ]
       };
       return demo;
@@ -1404,16 +1622,19 @@
       return { current, next };
     }
 
+    let payHistoryExpanded = false;
+    const PAY_HISTORY_DEFAULT_LIMIT = 5;
+
     function renderLoyalty() {
       const data = loyaltyRead();
       const pts = data.points || 0;
       const { current, next } = tierFor(pts);
-      const tierEl = document.getElementById("loyalty-tier");
+      const tierTextEl = document.getElementById("loyalty-tier-text");
       const ptsEl = document.getElementById("loyalty-points");
       const pctEl = document.getElementById("loyalty-progress-pct");
       const fillEl = document.getElementById("loyalty-progress-fill");
       const lblEl = document.getElementById("loyalty-progress-label");
-      if (tierEl) tierEl.textContent = current.name + " Member";
+      if (tierTextEl) tierTextEl.textContent = current.name + " Member";
       if (ptsEl) ptsEl.textContent = pts.toLocaleString("de-DE");
       if (next) {
         const span = next.min - current.min;
@@ -1427,6 +1648,12 @@
         if (fillEl) fillEl.style.width = "100%";
         if (lblEl) lblEl.textContent = "Höchster Status erreicht";
       }
+      renderPayHistory(data.history || []);
+    }
+
+    function expandPayHistory() {
+      payHistoryExpanded = true;
+      const data = loyaltyRead();
       renderPayHistory(data.history || []);
     }
 
@@ -1446,24 +1673,44 @@
 
     function renderPayHistory(history) {
       const el = document.getElementById("pay-history");
+      const countEl = document.getElementById("pay-history-count");
+      const moreWrap = document.getElementById("pay-history-more-wrap");
+      const moreBtn = document.getElementById("pay-history-more-btn");
       if (!el) return;
       if (!history.length) {
-        el.innerHTML = '<div class="pay-empty">Noch keine Zahlungen. Deine erste Bezahlung bringt dir bis zu 50 Punkte.</div>';
+        el.innerHTML = '<div class="pay-empty">Noch keine Zahlungen. Deine erste Bezahlung auf einem Event bringt dir bis zu 50 Punkte.</div>';
+        if (countEl) countEl.textContent = "";
+        if (moreWrap) moreWrap.style.display = "none";
         return;
       }
-      el.innerHTML = history.map(h => `
-        <div class="pay-history-item">
-          <div class="logo">${h.logo || "💳"}</div>
-          <div class="info">
-            <div class="merchant">${h.merchant}</div>
-            <div class="meta">${formatRelativeDate(h.ts)} · ${h.method === "nfc" ? "NFC" : "QR"}</div>
+      const limit = payHistoryExpanded ? history.length : PAY_HISTORY_DEFAULT_LIMIT;
+      const visible = history.slice(0, limit);
+      el.innerHTML = visible.map(h => {
+        const meta = [formatRelativeDate(h.ts), h.method === "nfc" ? "NFC" : "QR"];
+        if (h.event) meta.push(h.event);
+        return `
+          <div class="pay-history-item">
+            <div class="logo">${h.logo || "💳"}</div>
+            <div class="info">
+              <div class="merchant">${h.merchant}</div>
+              <div class="meta">${meta.join(" · ")}</div>
+            </div>
+            <div class="amount">
+              <div class="eur">${h.amount.toFixed(2).replace(".", ",")} €</div>
+              <div class="pts">+${h.points} Pkt</div>
+            </div>
           </div>
-          <div class="amount">
-            <div class="eur">${h.amount.toFixed(2).replace(".", ",")} €</div>
-            <div class="pts">+${h.points} Pkt</div>
-          </div>
-        </div>
-      `).join("");
+        `;
+      }).join("");
+      if (countEl) countEl.textContent = visible.length + " von " + history.length;
+      if (moreWrap && moreBtn) {
+        if (history.length > PAY_HISTORY_DEFAULT_LIMIT && !payHistoryExpanded) {
+          moreWrap.style.display = "block";
+          moreBtn.textContent = "Historie erweitern (+" + (history.length - PAY_HISTORY_DEFAULT_LIMIT) + ")";
+        } else {
+          moreWrap.style.display = "none";
+        }
+      }
     }
 
     let pendingPayment = null;
@@ -1511,6 +1758,108 @@
       back();
       renderLoyalty();
       showToast(`✓ ${amount.toFixed(2).replace(".", ",")} € · +${points} Punkte`);
+    }
+
+    function renderBenefits() {
+      const data = loyaltyRead();
+      const pts = data.points || 0;
+      const { current, next } = tierFor(pts);
+
+      const badgeEl = document.getElementById("benefits-current-badge");
+      if (badgeEl) {
+        badgeEl.textContent = current.name;
+        badgeEl.className = "benefits-tier-badge " + current.key;
+      }
+      const nameEl = document.getElementById("benefits-current-name");
+      if (nameEl) nameEl.textContent = current.name + " Member";
+      const subEl = document.getElementById("benefits-current-sub");
+      if (subEl) subEl.textContent = pts.toLocaleString("de-DE") + " Punkte · Dein aktueller Status";
+
+      // Aktuelle Vorteile
+      const curListEl = document.getElementById("benefits-current-list");
+      if (curListEl) {
+        curListEl.innerHTML = current.perks.map(p => `
+          <div class="benefit-item">
+            <div class="b-icon">${p.icon}</div>
+            <div class="b-info">
+              <div class="b-title">${p.title}</div>
+              <div class="b-desc">${p.desc}</div>
+            </div>
+          </div>
+        `).join("");
+      }
+
+      // Nächster Tier
+      const nextCard = document.getElementById("benefits-next-card");
+      if (nextCard) {
+        if (next) {
+          const span = next.min - current.min;
+          const done = pts - current.min;
+          const pct = Math.max(0, Math.min(100, Math.round((done / span) * 100)));
+          const missing = next.min - pts;
+          const firstPerks = next.perks.slice(0, 3).map(p => p.icon + " " + p.title).join(" · ");
+          nextCard.classList.remove("maxed");
+          nextCard.innerHTML = `
+            <div class="nt-head">
+              <div class="nt-name">${next.name} Member</div>
+              <div class="nt-meta">noch ${missing.toLocaleString("de-DE")} Pkt</div>
+            </div>
+            <div class="nt-progress-track"><div class="nt-progress-fill" style="width:${pct}%"></div></div>
+            <div class="nt-preview">Freischaltung bei ${next.min.toLocaleString("de-DE")} Punkten:<br>${firstPerks}</div>
+          `;
+        } else {
+          nextCard.classList.add("maxed");
+          nextCard.innerHTML = `
+            <div class="nt-head">
+              <div class="nt-name">Höchster Status erreicht 🏆</div>
+            </div>
+            <div class="nt-preview">Du genießt alle Crowdtune-Vorteile auf Platinum-Level.</div>
+          `;
+        }
+      }
+
+      // Alle Tiers
+      const allEl = document.getElementById("benefits-all-tiers");
+      if (allEl) {
+        const dotColor = {
+          bronze:   "linear-gradient(135deg,#a36431,#cd7f32)",
+          silver:   "linear-gradient(135deg,#8a8a8a,#c0c0c0)",
+          gold:     "linear-gradient(135deg,#b8860b,#f5c542)",
+          platinum: "linear-gradient(135deg,#6b7280,#e5e7eb)"
+        };
+        allEl.innerHTML = LOYALTY_TIERS.map(t => {
+          const unlocked = pts >= t.min;
+          const isCurrent = t.key === current.key;
+          return `
+            <div class="tier-row-item ${isCurrent ? "current" : ""}">
+              <div class="t-dot" style="background:${dotColor[t.key]}"></div>
+              <div class="t-info">
+                <div class="t-name">${t.name}</div>
+                <div class="t-min">${t.min.toLocaleString("de-DE")} Pkt · ${t.perks.length} Vorteile</div>
+              </div>
+              <div class="t-mark">${isCurrent ? "Aktuell" : (unlocked ? "✓" : "")}</div>
+            </div>
+          `;
+        }).join("");
+      }
+    }
+
+    // ============ Profil ============
+    function renderProfile() {
+      const avEl = document.getElementById("profile-avatar-big");
+      const nameEl = document.getElementById("profile-name");
+      const subEl = document.getElementById("profile-sub");
+      if (avEl) {
+        if (state.user.avatarUrl) {
+          avEl.textContent = "";
+          avEl.style.backgroundImage = `url('${state.user.avatarUrl}')`;
+        } else {
+          avEl.style.backgroundImage = "";
+          avEl.textContent = state.user.initials || "U";
+        }
+      }
+      if (nameEl) nameEl.textContent = state.user.name || "Du";
+      if (subEl)  subEl.textContent  = state.user.email || "maxvoigt96@gmail.com";
     }
 
     // ============ QR Scanner (mock) ============
