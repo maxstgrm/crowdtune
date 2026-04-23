@@ -59,8 +59,8 @@
     }
     .screen.active { transform: translateX(0); opacity: 1; pointer-events: auto; z-index: 2; }
     .screen.past { transform: translateX(-22%); opacity: 0; z-index: 0; }
-    .screen.modal { transform: translateY(100%); z-index: 3; }
-    .screen.modal.active { transform: translateY(0); z-index: 4; }
+    .screen.modal { transform: translateY(100%); z-index: 30; }
+    .screen.modal.active { transform: translateY(0); z-index: 31; }
 
     /* --------- Typography --------- */
     h1, h2, h3 { letter-spacing: -0.02em; font-weight: 700; }
@@ -246,6 +246,17 @@
     .party-info .meta { font-size: 13px; color: rgba(255,255,255,.5); }
     .chevron { color: rgba(255,255,255,.3); font-size: 20px; }
 
+    .empty-events {
+      text-align: center;
+      padding: 32px 20px;
+      background: rgba(255,255,255,.04);
+      border-radius: 18px;
+      border: 1px dashed rgba(255,255,255,.12);
+    }
+    .empty-events-emoji { font-size: 36px; margin-bottom: 10px; opacity: .8; }
+    .empty-events-title { font-weight: 600; font-size: 15px; margin-bottom: 4px; }
+    .empty-events-sub { font-size: 13px; color: rgba(255,255,255,.55); }
+
     /* --------- Join Code Row --------- */
     .join-row {
       display: flex; gap: 10px; margin-bottom: 4px;
@@ -346,7 +357,7 @@
       left: 0; right: 0; bottom: 0;
       padding: 30px 24px calc(env(safe-area-inset-bottom, 0) + 20px);
       background: linear-gradient(180deg, rgba(10,10,15,0) 0%, rgba(10,10,15,.95) 30%, #0a0a0f 100%);
-      z-index: 5;
+      z-index: 40;
     }
 
     /* --------- Party Lobby --------- */
@@ -956,7 +967,7 @@
 </head>
 <body>
   <!-- DEBUG: sichtbarer Versions-Stempel, damit wir Cache-Probleme sofort erkennen -->
-  <div id="ct-version-stamp" style="position:fixed;top:4px;left:4px;z-index:99998;font:600 10px -apple-system,sans-serif;color:#fff;background:rgba(99,102,241,0.9);padding:3px 8px;border-radius:8px;pointer-events:none;">Crowdtune v15 • Event-Händler</div>
+  <div id="ct-version-stamp" style="position:fixed;top:4px;left:4px;z-index:99998;font:600 10px -apple-system,sans-serif;color:#fff;background:rgba(99,102,241,0.9);padding:3px 8px;border-radius:8px;pointer-events:none;">Crowdtune v16 • Event-erstellen</div>
 
   <!-- Auth-Loading-Overlay (wird nur gezeigt wenn wir gerade von Spotify zurückkommen) -->
   <div id="ct-auth-loading" style="display:none;position:fixed;inset:0;z-index:99997;background:linear-gradient(135deg,#0f0f1e 0%,#1a1a2e 50%,#2a1a3e 100%);display:none;align-items:center;justify-content:center;flex-direction:column;gap:24px;color:#fff;font:500 16px -apple-system,BlinkMacSystemFont,sans-serif;">
@@ -1051,30 +1062,7 @@
           <h2>Deine Events</h2>
           <a href="#" onclick="event.preventDefault(); showToast('Alle Events – coming soon')">Alle</a>
         </div>
-        <div class="party-card" onclick="go('party-lobby')">
-          <div class="party-art" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">🎉</div>
-          <div class="party-info">
-            <div class="name">Emilys Geburtstag</div>
-            <div class="meta">Gestern · 8 Personen · 32 Songs</div>
-          </div>
-          <div class="chevron">›</div>
-        </div>
-        <div class="party-card" onclick="go('party-lobby')">
-          <div class="party-art" style="background: linear-gradient(135deg, #06b6d4, #3b82f6);">🏠</div>
-          <div class="party-info">
-            <div class="name">WG-Abend</div>
-            <div class="meta">Letzten Samstag · 5 Personen · 24 Songs</div>
-          </div>
-          <div class="chevron">›</div>
-        </div>
-        <div class="party-card" onclick="go('party-lobby')">
-          <div class="party-art" style="background: linear-gradient(135deg, #5d5cde, #8a2be2);">🏖️</div>
-          <div class="party-info">
-            <div class="name">Beach Session</div>
-            <div class="meta">15. April · 12 Personen · 48 Songs</div>
-          </div>
-          <div class="chevron">›</div>
-        </div>
+        <div id="my-events-list"></div>
       </div>
     </section>
 
@@ -1499,6 +1487,7 @@
       if (screen === "pay") { payHistoryExpanded = false; renderLoyalty(); }
       if (screen === "loyalty-benefits") renderBenefits();
       if (screen === "profile") renderProfile();
+      if (screen === "home") renderMyEvents();
     }
 
     function back() {
@@ -1615,6 +1604,95 @@
     }
     function loyaltyWrite(data) {
       try { localStorage.setItem(LOYALTY_STORAGE_KEY, JSON.stringify(data)); } catch(e) {}
+    }
+
+    // ============ Meine Events (localStorage) ============
+    const MY_EVENTS_KEY = "ct_my_events_v1";
+    const EVENT_GRADIENTS = [
+      "linear-gradient(135deg, #6366f1, #8b5cf6)",
+      "linear-gradient(135deg, #06b6d4, #3b82f6)",
+      "linear-gradient(135deg, #5d5cde, #8a2be2)",
+      "linear-gradient(135deg, #f43f5e, #8b5cf6)",
+      "linear-gradient(135deg, #f59e0b, #ef4444)",
+      "linear-gradient(135deg, #10b981, #06b6d4)",
+      "linear-gradient(135deg, #ec4899, #8b5cf6)"
+    ];
+    function myEventsRead() {
+      try {
+        const raw = localStorage.getItem(MY_EVENTS_KEY);
+        if (raw) return JSON.parse(raw);
+      } catch(e) {}
+      return [];
+    }
+    function myEventsWrite(list) {
+      try { localStorage.setItem(MY_EVENTS_KEY, JSON.stringify(list)); } catch(e) {}
+    }
+    function myEventsAdd(ev) {
+      const list = myEventsRead();
+      // Duplikate per Code vermeiden: neuste oben
+      const filtered = list.filter(e => e.code !== ev.code);
+      filtered.unshift(ev);
+      // Maximal 20 speichern
+      myEventsWrite(filtered.slice(0, 20));
+    }
+    function relativeDate(ts) {
+      const diff = Date.now() - ts;
+      const day = 86400000;
+      if (diff < 2 * 3600000) return "Gerade eben";
+      if (diff < day) return "Heute";
+      if (diff < 2 * day) return "Gestern";
+      if (diff < 7 * day) return Math.floor(diff / day) + " Tage her";
+      const d = new Date(ts);
+      return d.toLocaleDateString("de-DE", { day: "numeric", month: "short" });
+    }
+    function renderMyEvents() {
+      const el = document.getElementById("my-events-list");
+      if (!el) return;
+      const list = myEventsRead();
+      if (!list.length) {
+        el.innerHTML = `
+          <div class="empty-events">
+            <div class="empty-events-emoji">🎉</div>
+            <div class="empty-events-title">Noch keine Events</div>
+            <div class="empty-events-sub">Starte dein erstes Event und lade Freunde ein</div>
+          </div>`;
+        return;
+      }
+      el.innerHTML = list.map((ev, i) => {
+        const grad = EVENT_GRADIENTS[i % EVENT_GRADIENTS.length];
+        const emoji = ev.emoji || "🎉";
+        const name = (ev.name || "Event").replace(/</g, "&lt;");
+        const when = relativeDate(ev.ts || Date.now());
+        const guests = ev.guestCount || 1;
+        const songs = ev.songCount || 0;
+        const code = (ev.code || "").replace(/</g, "&lt;");
+        return `
+          <div class="party-card" onclick="openMyEvent('${code}')">
+            <div class="party-art" style="background: ${grad};">${emoji}</div>
+            <div class="party-info">
+              <div class="name">${name}</div>
+              <div class="meta">${when} · ${guests} ${guests === 1 ? "Person" : "Personen"} · ${songs} Songs</div>
+            </div>
+            <div class="chevron">›</div>
+          </div>`;
+      }).join("");
+    }
+    function openMyEvent(code) {
+      const list = myEventsRead();
+      const ev = list.find(e => e.code === code);
+      if (!ev) { go("party-lobby"); return; }
+      state.partyName = ev.name;
+      state.partyEmoji = ev.emoji;
+      state.currentCode = ev.code;
+      state.isHost = !!ev.isHost;
+      const pn = document.getElementById("party-name");
+      const pe = document.getElementById("party-emoji");
+      const ct = document.getElementById("code-text");
+      if (pn) pn.textContent = ev.name;
+      if (pe) pe.textContent = ev.emoji;
+      if (ct) ct.textContent = ev.code;
+      go("party-lobby");
+      try { drawQR(ev.code); } catch(e) {}
     }
     function tierFor(points) {
       let current = LOYALTY_TIERS[0];
@@ -2556,6 +2634,7 @@
         document.getElementById("screen-home").classList.add("active");
         state.screenStack = ["home"];
         updateTabBar("home");
+        renderMyEvents();
       }
       hideAuthLoading();
       if (justLoggedIn) showToast(`Willkommen, ${state.user.name.split(" ")[0]} 👋`);
@@ -2587,6 +2666,18 @@
       document.getElementById("party-emoji").textContent = emoji;
       document.getElementById("code-text").textContent = state.currentCode;
 
+      // Lokal speichern, damit das Event bei „Deine Events" auftaucht
+      myEventsAdd({
+        code: state.currentCode,
+        name,
+        emoji,
+        ts: Date.now(),
+        guestCount: 1,
+        songCount: 0,
+        isHost: true
+      });
+      renderMyEvents();
+
       // Supabase: echte Party anlegen
       if (supabaseConfigured() && state.user.id) {
         unsubscribeFromPartyMembers();
@@ -2607,7 +2698,7 @@
       // Fallback ohne Supabase: Mock-Lobby wie zuvor
       state.party = null;
       state.partyMembers = null;
-      state.isHost = false;
+      state.isHost = true;
       state.guests = [MOCK_GUESTS[0]];
       closeSheet("create-party");
       go("party-lobby");
