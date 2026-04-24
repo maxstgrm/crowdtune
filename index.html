@@ -1010,7 +1010,7 @@
 </head>
 <body>
   <!-- DEBUG: sichtbarer Versions-Stempel, damit wir Cache-Probleme sofort erkennen -->
-  <div id="ct-version-stamp" style="position:fixed;top:4px;left:4px;z-index:99998;font:600 10px -apple-system,sans-serif;color:#fff;background:rgba(99,102,241,0.9);padding:3px 8px;border-radius:8px;pointer-events:none;">Crowdtune v18 • Connect+Matching</div>
+  <div id="ct-version-stamp" style="position:fixed;top:4px;left:4px;z-index:99998;font:600 10px -apple-system,sans-serif;color:#fff;background:rgba(99,102,241,0.9);padding:3px 8px;border-radius:8px;pointer-events:none;">Crowdtune v19 • Playlist-Fix</div>
 
   <!-- Auth-Loading-Overlay (wird nur gezeigt wenn wir gerade von Spotify zurückkommen) -->
   <div id="ct-auth-loading" style="display:none;position:fixed;inset:0;z-index:99997;background:linear-gradient(135deg,#0f0f1e 0%,#1a1a2e 50%,#2a1a3e 100%);display:none;align-items:center;justify-content:center;flex-direction:column;gap:24px;color:#fff;font:500 16px -apple-system,BlinkMacSystemFont,sans-serif;">
@@ -3342,15 +3342,57 @@
       }
     }
 
-    function openPlaylistOnSpotify() {
+    async function openPlaylistOnSpotify() {
+      const btn = document.getElementById("open-playlist-btn");
+      const hint = document.getElementById("playback-hint");
+
+      // Falls Playlist schon erzeugt → direkt öffnen
       if (lastPlaylist && lastPlaylist.external_urls && lastPlaylist.external_urls.spotify) {
         window.open(lastPlaylist.external_urls.spotify, "_blank");
         return;
       }
-      // Fallback: ersten Track öffnen, damit man zumindest in Spotify landet
-      const first = (state.currentMix || [])[0];
-      if (first && first.spotifyUrl) window.open(first.spotifyUrl, "_blank");
-      else showToast("Noch keine Playlist erzeugt — bitte zuerst abspielen");
+
+      // Vorbedingungen
+      if (!spotifyConfigured() || !localStorage.getItem("ct_access")) {
+        showToast("Bitte mit Spotify einloggen");
+        return;
+      }
+      if (!state.currentMix || !state.currentMix.length) {
+        showToast("Kein Mix vorhanden");
+        return;
+      }
+      const uris = state.currentMix.map(t => t.uri).filter(Boolean);
+      if (!uris.length) { showToast("Keine abspielbaren Tracks"); return; }
+
+      // Synchron ein leeres Tab öffnen — sonst blockieren Mobile-Browser das
+      // Popup nach dem await-Boundary.
+      const win = window.open("about:blank", "_blank");
+
+      const originalLabel = btn ? btn.textContent : "";
+      if (btn) { btn.disabled = true; btn.textContent = "Erstelle Playlist…"; }
+      if (hint) hint.textContent = "";
+
+      try {
+        const playlist = await createSpotifyPlaylist(uris);
+        if (!playlist || !playlist.external_urls || !playlist.external_urls.spotify) {
+          if (win) win.close();
+          showToast("Playlist konnte nicht erstellt werden");
+          return;
+        }
+        playlist._forMix = state.currentMix;
+        lastPlaylist = playlist;
+        if (win) win.location.href = playlist.external_urls.spotify;
+        else window.open(playlist.external_urls.spotify, "_blank");
+        if (hint) hint.innerHTML = `✓ Playlist <strong>${playlist.name}</strong> in Spotify geöffnet.`;
+      } catch (e) {
+        if (win) win.close();
+        console.error("[Crowdtune] create playlist failed", e);
+        const msg = (e && e.message) || "";
+        if (hint) hint.textContent = "Playlist-Erstellung fehlgeschlagen: " + msg;
+        showToast("Fehler beim Erstellen");
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = originalLabel; }
+      }
     }
 
     // ============ Generating Animation ============
