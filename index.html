@@ -1010,7 +1010,7 @@
 </head>
 <body>
   <!-- DEBUG: sichtbarer Versions-Stempel, damit wir Cache-Probleme sofort erkennen -->
-  <div id="ct-version-stamp" style="position:fixed;top:4px;left:4px;z-index:99998;font:600 10px -apple-system,sans-serif;color:#fff;background:rgba(99,102,241,0.9);padding:3px 8px;border-radius:8px;pointer-events:none;">Crowdtune v19 • Playlist-Fix</div>
+  <div id="ct-version-stamp" style="position:fixed;top:4px;left:4px;z-index:99998;font:600 10px -apple-system,sans-serif;color:#fff;background:rgba(99,102,241,0.9);padding:3px 8px;border-radius:8px;pointer-events:none;">Crowdtune v20 • spotifyApi-Options</div>
 
   <!-- Auth-Loading-Overlay (wird nur gezeigt wenn wir gerade von Spotify zurückkommen) -->
   <div id="ct-auth-loading" style="display:none;position:fixed;inset:0;z-index:99997;background:linear-gradient(135deg,#0f0f1e 0%,#1a1a2e 50%,#2a1a3e 100%);display:none;align-items:center;justify-content:center;flex-direction:column;gap:24px;color:#fff;font:500 16px -apple-system,BlinkMacSystemFont,sans-serif;">
@@ -2421,15 +2421,28 @@
       }
     }
 
-    async function spotifyApi(endpoint) {
+    async function spotifyApi(endpoint, options) {
       const token = await spotifyToken();
       if (!token) return null;
-      const res = await fetch("https://api.spotify.com/v1" + endpoint, {
-        headers: { "Authorization": "Bearer " + token }
-      });
-      if (res.status === 401) { spotifyLogout(); return null; }
-      if (!res.ok) { console.error("Spotify API error", res.status, await res.text()); return null; }
-      return res.json();
+      const opts = Object.assign({}, options || {});
+      opts.headers = Object.assign({ "Authorization": "Bearer " + token }, opts.headers || {});
+      const res = await fetch("https://api.spotify.com/v1" + endpoint, opts);
+      if (res.status === 401) { spotifyLogout(); throw new Error("Spotify-Login abgelaufen, bitte neu anmelden"); }
+      if (res.status === 403) {
+        const body = await res.text();
+        console.error("Spotify 403", endpoint, body);
+        throw new Error("Spotify hat den Request abgelehnt (403) — evtl. fehlende Scopes oder Premium nötig. Einmal ausloggen und neu einloggen.");
+      }
+      if (!res.ok) {
+        const body = await res.text();
+        console.error("Spotify API error", res.status, endpoint, body);
+        throw new Error(`Spotify ${res.status}: ${body.slice(0, 180)}`);
+      }
+      // 204 No Content (Playback-APIs liefern das)
+      if (res.status === 204) return {};
+      const text = await res.text();
+      if (!text) return {};
+      try { return JSON.parse(text); } catch (e) { return {}; }
     }
 
     function spotifyLogout() {
@@ -2439,7 +2452,9 @@
     }
 
     async function loadSpotifyProfile() {
-      const profile = await spotifyApi("/me");
+      let profile = null;
+      try { profile = await spotifyApi("/me"); }
+      catch (e) { console.error("[Crowdtune] /me failed", e); return false; }
       if (!profile) return false;
       state.user.id = profile.id;
       state.user.name = profile.display_name || profile.id || "Du";
@@ -2476,7 +2491,9 @@
       let url = "/me/tracks?limit=50";
       let safety = 20; // max 20 * 50 = 1000
       while (url && all.length < maxTotal && safety-- > 0) {
-        const page = await spotifyApi(url);
+        let page = null;
+        try { page = await spotifyApi(url); }
+        catch (e) { console.warn("[Crowdtune] saved tracks page failed", e); break; }
         if (!page || !page.items) break;
         for (const it of page.items) {
           if (it && it.track) all.push(it.track);
@@ -2492,14 +2509,16 @@
     // Holt breites Hör-Profil: Top-Tracks (3 Zeiträume) + Liked Songs + Top-Artists + Recent
     // Kombiniert alles mit gewichtetem Scoring in state.user.tracks (Map von id → {track, score}).
     async function loadSpotifyProfileData() {
+      // Jeder Call darf einzeln scheitern (z. B. recently-played scope), der Rest lädt trotzdem
+      const safe = (p) => p.catch(e => { console.warn("[Crowdtune] profile call failed", e); return null; });
       const [shortT, medT, longT, saved, artistsShort, artistsMed, recent] = await Promise.all([
-        spotifyApi("/me/top/tracks?limit=50&time_range=short_term"),
-        spotifyApi("/me/top/tracks?limit=50&time_range=medium_term"),
-        spotifyApi("/me/top/tracks?limit=50&time_range=long_term"),
+        safe(spotifyApi("/me/top/tracks?limit=50&time_range=short_term")),
+        safe(spotifyApi("/me/top/tracks?limit=50&time_range=medium_term")),
+        safe(spotifyApi("/me/top/tracks?limit=50&time_range=long_term")),
         fetchAllSaved(500),
-        spotifyApi("/me/top/artists?limit=50&time_range=short_term"),
-        spotifyApi("/me/top/artists?limit=50&time_range=medium_term"),
-        spotifyApi("/me/player/recently-played?limit=50")
+        safe(spotifyApi("/me/top/artists?limit=50&time_range=short_term")),
+        safe(spotifyApi("/me/top/artists?limit=50&time_range=medium_term")),
+        safe(spotifyApi("/me/player/recently-played?limit=50"))
       ]);
 
       // Gewichtungs-Schema:
