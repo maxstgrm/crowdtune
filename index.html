@@ -355,10 +355,13 @@
     .sheet-footer {
       position: absolute;
       left: 0; right: 0; bottom: 0;
-      padding: 30px 24px calc(env(safe-area-inset-bottom, 0) + 20px);
+      padding: 20px 24px calc(env(safe-area-inset-bottom, 0) + 20px);
       background: linear-gradient(180deg, rgba(10,10,15,0) 0%, rgba(10,10,15,.95) 30%, #0a0a0f 100%);
       z-index: 40;
+      display: flex;
+      justify-content: center;
     }
+    .sheet-footer > .btn { width: 100%; max-width: 420px; }
 
     /* --------- Party Lobby --------- */
     .party-hero {
@@ -967,7 +970,7 @@
 </head>
 <body>
   <!-- DEBUG: sichtbarer Versions-Stempel, damit wir Cache-Probleme sofort erkennen -->
-  <div id="ct-version-stamp" style="position:fixed;top:4px;left:4px;z-index:99998;font:600 10px -apple-system,sans-serif;color:#fff;background:rgba(99,102,241,0.9);padding:3px 8px;border-radius:8px;pointer-events:none;">Crowdtune v16 • Event-erstellen</div>
+  <div id="ct-version-stamp" style="position:fixed;top:4px;left:4px;z-index:99998;font:600 10px -apple-system,sans-serif;color:#fff;background:rgba(99,102,241,0.9);padding:3px 8px;border-radius:8px;pointer-events:none;">Crowdtune v17 • Join-Events</div>
 
   <!-- Auth-Loading-Overlay (wird nur gezeigt wenn wir gerade von Spotify zurückkommen) -->
   <div id="ct-auth-loading" style="display:none;position:fixed;inset:0;z-index:99997;background:linear-gradient(135deg,#0f0f1e 0%,#1a1a2e 50%,#2a1a3e 100%);display:none;align-items:center;justify-content:center;flex-direction:column;gap:24px;color:#fff;font:500 16px -apple-system,BlinkMacSystemFont,sans-serif;">
@@ -2052,9 +2055,20 @@
       state.partyEmoji = ev.emoji;
       state.currentCode = generateCode();
       state.guests = MOCK_GUESTS.slice();
+      state.isHost = false;
       document.getElementById("party-name").textContent = ev.title;
       document.getElementById("party-emoji").textContent = ev.emoji;
       document.getElementById("code-text").textContent = state.currentCode;
+      myEventsAdd({
+        code: state.currentCode,
+        name: ev.title,
+        emoji: ev.emoji,
+        ts: Date.now(),
+        guestCount: ev.attendees || state.guests.length,
+        songCount: 0,
+        isHost: false
+      });
+      renderMyEvents();
       go("party-lobby");
       renderGuests();
       drawQR(state.currentCode);
@@ -2739,6 +2753,16 @@
         await upsertSelfAsMember(party.id);
         await refreshGuestsFromSupabase();
         subscribeToPartyMembers(party.id);
+        myEventsAdd({
+          code: state.currentCode,
+          name: party.name,
+          emoji: party.emoji || "🎉",
+          ts: Date.now(),
+          guestCount: Array.isArray(state.guests) ? state.guests.length : 1,
+          songCount: 0,
+          isHost: state.isHost
+        });
+        renderMyEvents();
         go("party-lobby");
         drawQR(state.currentCode);
         return;
@@ -2748,6 +2772,18 @@
       state.party = null;
       state.partyMembers = null;
       state.guests = MOCK_GUESTS.slice(0, 2);
+      state.partyName = "Event " + state.currentCode;
+      document.getElementById("party-name").textContent = state.partyName;
+      myEventsAdd({
+        code: state.currentCode,
+        name: state.partyName,
+        emoji: "🎉",
+        ts: Date.now(),
+        guestCount: state.guests.length,
+        songCount: 0,
+        isHost: false
+      });
+      renderMyEvents();
       go("party-lobby");
       renderGuests();
       drawQR(state.currentCode);
