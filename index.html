@@ -248,14 +248,54 @@
 
     .empty-events {
       text-align: center;
-      padding: 32px 20px;
+      padding: 28px 22px;
       background: rgba(255,255,255,.04);
       border-radius: 18px;
       border: 1px dashed rgba(255,255,255,.12);
     }
     .empty-events-emoji { font-size: 36px; margin-bottom: 10px; opacity: .8; }
     .empty-events-title { font-weight: 600; font-size: 15px; margin-bottom: 4px; }
-    .empty-events-sub { font-size: 13px; color: rgba(255,255,255,.55); }
+    .empty-events-sub { font-size: 13px; color: rgba(255,255,255,.55); margin-bottom: 18px; }
+    .empty-events-steps { text-align: left; margin: 8px auto 18px; max-width: 280px; }
+    .empty-events-step { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; font-size: 13px; color: rgba(255,255,255,.75); }
+    .empty-events-step .n {
+      flex-shrink: 0; width: 22px; height: 22px; border-radius: 7px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      display: grid; place-items: center; font-size: 11px; font-weight: 700; color: #fff;
+    }
+    .empty-events-cta {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: linear-gradient(135deg, #6366f1 0%, #8a2be2 100%);
+      color: #fff; font-weight: 600; font-size: 14px;
+      padding: 12px 18px; border-radius: 14px;
+      box-shadow: 0 10px 24px rgba(99,102,241,.4);
+    }
+
+    /* --------- Confirm Sheet --------- */
+    .confirm-sheet {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.5);
+      z-index: 100;
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 20px;
+      padding-bottom: calc(env(safe-area-inset-bottom, 0) + 20px);
+    }
+    .confirm-sheet.show { display: flex; }
+    .confirm-panel {
+      width: 100%; max-width: 420px;
+      background: #1a1a22; border: 1px solid rgba(255,255,255,.08);
+      border-radius: 22px;
+      padding: 22px;
+      animation: confirmIn .22s cubic-bezier(.32,.72,.35,1);
+    }
+    @keyframes confirmIn { from { transform: translateY(24px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .confirm-title { font-weight: 700; font-size: 18px; margin-bottom: 6px; }
+    .confirm-sub { font-size: 14px; color: rgba(255,255,255,.65); margin-bottom: 18px; line-height: 1.4; }
+    .confirm-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .confirm-actions .btn { height: 48px; font-size: 14px; }
+    .btn-danger { background: #ef4444; color: #fff; }
 
     /* --------- Join Code Row --------- */
     .join-row {
@@ -970,7 +1010,7 @@
 </head>
 <body>
   <!-- DEBUG: sichtbarer Versions-Stempel, damit wir Cache-Probleme sofort erkennen -->
-  <div id="ct-version-stamp" style="position:fixed;top:4px;left:4px;z-index:99998;font:600 10px -apple-system,sans-serif;color:#fff;background:rgba(99,102,241,0.9);padding:3px 8px;border-radius:8px;pointer-events:none;">Crowdtune v17 • Join-Events</div>
+  <div id="ct-version-stamp" style="position:fixed;top:4px;left:4px;z-index:99998;font:600 10px -apple-system,sans-serif;color:#fff;background:rgba(99,102,241,0.9);padding:3px 8px;border-radius:8px;pointer-events:none;">Crowdtune v18 • Connect+Matching</div>
 
   <!-- Auth-Loading-Overlay (wird nur gezeigt wenn wir gerade von Spotify zurückkommen) -->
   <div id="ct-auth-loading" style="display:none;position:fixed;inset:0;z-index:99997;background:linear-gradient(135deg,#0f0f1e 0%,#1a1a2e 50%,#2a1a3e 100%);display:none;align-items:center;justify-content:center;flex-direction:column;gap:24px;color:#fff;font:500 16px -apple-system,BlinkMacSystemFont,sans-serif;">
@@ -1116,12 +1156,24 @@
       </div>
     </section>
 
+    <!-- =================== EVENT MENU / CONFIRM SHEET =================== -->
+    <div id="confirm-sheet" class="confirm-sheet">
+      <div class="confirm-panel">
+        <div class="confirm-title" id="confirm-title">Event verlassen?</div>
+        <div class="confirm-sub" id="confirm-sub">Du kannst jederzeit wieder beitreten, solange das Event aktiv ist.</div>
+        <div class="confirm-actions">
+          <button class="btn btn-ghost" onclick="hideConfirmSheet()">Abbrechen</button>
+          <button class="btn" id="confirm-action-btn">Bestätigen</button>
+        </div>
+      </div>
+    </div>
+
     <!-- =================== PARTY LOBBY =================== -->
     <section id="screen-party-lobby" class="screen">
       <div class="nav-bar">
         <button class="back-btn" onclick="back()">‹</button>
         <div class="micro">Event läuft</div>
-        <div style="width: 40px;"></div>
+        <button class="back-btn" id="lobby-menu-btn" onclick="openLobbyMenu()" aria-label="Event-Menü">⋯</button>
       </div>
       <div class="scroll" style="padding-bottom: 160px; padding-left: 0; padding-right: 0;">
         <div class="party-hero">
@@ -1210,17 +1262,18 @@
         </div>
 
         <div class="mix-actions">
-          <button class="btn btn-spotify" onclick="showToast('Öffne Spotify...')">
+          <button class="btn btn-spotify" id="play-on-spotify-btn" onclick="playMixOnSpotify()">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
-            Auf Spotify öffnen
+            <span id="play-on-spotify-label">Auf Anlage abspielen</span>
           </button>
-          <button class="btn btn-ghost" onclick="showToast('Link kopiert')">Teilen</button>
+          <button class="btn btn-ghost" id="open-playlist-btn" onclick="openPlaylistOnSpotify()">Playlist öffnen</button>
         </div>
+        <div id="playback-hint" class="muted" style="font-size: 12px; text-align: center; padding: 0 24px 8px;"></div>
 
         <div class="track-list" id="track-list"></div>
 
         <div style="padding: 16px 24px 40px; color: rgba(255,255,255,.5); font-size: 13px; text-align: center;">
-          Algorithmus: Überlappung der Top-50 Tracks · gewichtet nach Platzierung und Genre-Ähnlichkeit
+          Algorithmus: Überlappung der Top-Tracks · Audio-Feature-Kohärenz · Genre-Overlap · Mood-Filter
         </div>
       </div>
     </section>
@@ -1655,9 +1708,15 @@
       if (!list.length) {
         el.innerHTML = `
           <div class="empty-events">
-            <div class="empty-events-emoji">🎉</div>
-            <div class="empty-events-title">Noch keine Events</div>
-            <div class="empty-events-sub">Starte dein erstes Event und lade Freunde ein</div>
+            <div class="empty-events-emoji">🎧</div>
+            <div class="empty-events-title">Los geht's mit deinem ersten Event</div>
+            <div class="empty-events-sub">So funktioniert Crowdtune:</div>
+            <div class="empty-events-steps">
+              <div class="empty-events-step"><span class="n">1</span><span>Starte ein Event und teile den Code mit deiner Crew.</span></div>
+              <div class="empty-events-step"><span class="n">2</span><span>Alle loggen sich mit Spotify ein — wir analysieren euren Geschmack.</span></div>
+              <div class="empty-events-step"><span class="n">3</span><span>Crowdtune baut den Mix, der bei allen trifft, und startet ihn auf der Anlage.</span></div>
+            </div>
+            <button class="empty-events-cta" onclick="openSheet('create-party')">Erstes Event starten →</button>
           </div>`;
         return;
       }
@@ -1696,6 +1755,99 @@
       if (ct) ct.textContent = ev.code;
       go("party-lobby");
       try { drawQR(ev.code); } catch(e) {}
+    }
+    function myEventsRemove(code) {
+      const list = myEventsRead().filter(e => e.code !== code);
+      myEventsWrite(list);
+    }
+
+    // ============ Confirm Sheet ============
+    function showConfirmSheet({ title, sub, actionLabel, actionClass, onConfirm }) {
+      document.getElementById("confirm-title").textContent = title;
+      document.getElementById("confirm-sub").textContent = sub;
+      const btn = document.getElementById("confirm-action-btn");
+      btn.textContent = actionLabel;
+      btn.className = "btn " + (actionClass || "btn-primary-gradient");
+      btn.onclick = async () => {
+        btn.disabled = true;
+        try { await onConfirm(); } finally { btn.disabled = false; hideConfirmSheet(); }
+      };
+      document.getElementById("confirm-sheet").classList.add("show");
+    }
+    function hideConfirmSheet() {
+      document.getElementById("confirm-sheet").classList.remove("show");
+    }
+    // Klick auf Backdrop schließt das Sheet
+    document.addEventListener("click", (e) => {
+      const sheet = document.getElementById("confirm-sheet");
+      if (!sheet || !sheet.classList.contains("show")) return;
+      if (e.target === sheet) hideConfirmSheet();
+    });
+
+    // ============ Lobby-Menü: Event löschen/verlassen ============
+    function openLobbyMenu() {
+      const isHost = !!state.isHost;
+      if (isHost) {
+        showConfirmSheet({
+          title: "Event löschen?",
+          sub: "Alle Teilnehmer werden entfernt und das Event kann nicht weiter verwendet werden.",
+          actionLabel: "Event löschen",
+          actionClass: "btn-danger",
+          onConfirm: deleteCurrentEvent
+        });
+      } else {
+        showConfirmSheet({
+          title: "Event verlassen?",
+          sub: "Du wirst aus der Teilnehmerliste entfernt. Du kannst über den Code wieder beitreten.",
+          actionLabel: "Event verlassen",
+          actionClass: "btn-danger",
+          onConfirm: leaveCurrentEvent
+        });
+      }
+    }
+
+    async function deleteCurrentEvent() {
+      const code = state.currentCode;
+      // Supabase: Party löschen (party_members via ON DELETE CASCADE)
+      if (sbClient && state.party && state.party.id) {
+        const { error } = await sbClient.from("parties").delete().eq("id", state.party.id);
+        if (error) console.warn("[Crowdtune] delete party failed", error);
+        unsubscribeFromPartyMembers();
+      }
+      if (code) myEventsRemove(code);
+      state.party = null; state.partyMembers = null; state.isHost = false;
+      state.currentMix = null; lastPlaylist = null;
+      renderMyEvents();
+      showToast("Event gelöscht");
+      // Stack sauber auf Home zurücksetzen
+      document.getElementById("screen-party-lobby").classList.remove("active");
+      const home = document.getElementById("screen-home");
+      home.classList.add("active"); home.classList.remove("past");
+      state.screenStack = ["home"];
+      updateTabBar("home");
+    }
+
+    async function leaveCurrentEvent() {
+      const code = state.currentCode;
+      if (sbClient && state.party && state.party.id && state.user.id) {
+        const { error } = await sbClient
+          .from("party_members")
+          .delete()
+          .eq("party_id", state.party.id)
+          .eq("user_id", state.user.id);
+        if (error) console.warn("[Crowdtune] leave party failed", error);
+        unsubscribeFromPartyMembers();
+      }
+      if (code) myEventsRemove(code);
+      state.party = null; state.partyMembers = null;
+      state.currentMix = null; lastPlaylist = null;
+      renderMyEvents();
+      showToast("Event verlassen");
+      document.getElementById("screen-party-lobby").classList.remove("active");
+      const home = document.getElementById("screen-home");
+      home.classList.add("active"); home.classList.remove("past");
+      state.screenStack = ["home"];
+      updateTabBar("home");
     }
     function tierFor(points) {
       let current = LOYALTY_TIERS[0];
@@ -2097,7 +2249,7 @@
     const SPOTIFY_CLIENT_ID = (window.CROWDTUNE_CONFIG || {}).SPOTIFY_CLIENT_ID || "";
     // Redirect-URI: aktueller Ordner (https://.../)
     const SPOTIFY_REDIRECT_URI = window.location.origin + window.location.pathname.replace(/[^\/]*$/, "");
-    const SPOTIFY_SCOPES = "user-top-read user-read-private user-read-email user-read-recently-played user-library-read";
+    const SPOTIFY_SCOPES = "user-top-read user-read-private user-read-email user-read-recently-played user-library-read streaming user-read-playback-state user-modify-playback-state playlist-modify-private playlist-modify-public";
 
     function spotifyConfigured() {
       return SPOTIFY_CLIENT_ID && SPOTIFY_CLIENT_ID !== "DEINE_SPOTIFY_CLIENT_ID_HIER";
@@ -2399,9 +2551,72 @@
       state.user.trackCount = sorted.length;
       state.user.topArtistIds = [...topArtistIds];
 
-      console.log(`[Crowdtune] Profil geladen: ${sorted.length} einzigartige Tracks, ${topArtistIds.size} Top-Artists`);
+      // Audio-Features für die Top 150 Tracks holen (in 2 Batches à 100)
+      const featTrackIds = sorted.slice(0, 150).map(e => e.track.id).filter(Boolean);
+      const audioMap = new Map();
+      try {
+        for (let i = 0; i < featTrackIds.length; i += 100) {
+          const chunk = featTrackIds.slice(i, i + 100);
+          if (!chunk.length) break;
+          const res = await spotifyApi(`/audio-features?ids=${chunk.join(",")}`);
+          if (res && Array.isArray(res.audio_features)) {
+            res.audio_features.forEach(af => {
+              if (!af || !af.id) return;
+              audioMap.set(af.id, {
+                en: round2(af.energy),
+                da: round2(af.danceability),
+                va: round2(af.valence),
+                ac: round2(af.acousticness),
+                te: Math.round(af.tempo || 0)
+              });
+            });
+          }
+        }
+      } catch (e) { console.warn("[Crowdtune] audio-features fehlgeschlagen", e); }
+      state.user.audioMap = audioMap;
+
+      // Genres aus Top-Artists extrahieren (dedupliziert mit Häufigkeitsgewicht)
+      const genreCount = new Map();
+      const collectGenres = (list) => {
+        if (!list || !list.items) return;
+        list.items.forEach(a => {
+          (a.genres || []).forEach(g => genreCount.set(g, (genreCount.get(g) || 0) + 1));
+        });
+      };
+      collectGenres(artistsShort);
+      collectGenres(artistsMed);
+      const topGenres = [...genreCount.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 20)
+        .map(e => e[0]);
+      state.user.topGenres = topGenres;
+
+      // Audio-Profil des Users: Ø über Top 30 Tracks
+      const profileTracks = sorted.slice(0, 30).map(e => audioMap.get(e.track.id)).filter(Boolean);
+      const avg = (key) => profileTracks.length
+        ? profileTracks.reduce((s, f) => s + (f[key] || 0), 0) / profileTracks.length
+        : 0;
+      state.user.audioProfile = profileTracks.length ? {
+        en: round2(avg("en")),
+        da: round2(avg("da")),
+        va: round2(avg("va")),
+        ac: round2(avg("ac")),
+        te: Math.round(avg("te"))
+      } : null;
+
+      // Artist → Genres Lookup für Track-Genres
+      const artistGenreMap = new Map();
+      [artistsShort, artistsMed].forEach(list => {
+        if (!list || !list.items) return;
+        list.items.forEach(a => { if (a && a.id) artistGenreMap.set(a.id, a.genres || []); });
+      });
+      state.user.artistGenreMap = artistGenreMap;
+
+      console.log(`[Crowdtune] Profil: ${sorted.length} Tracks, ${topArtistIds.size} Artists, ${audioMap.size} Audio-Features, ${topGenres.length} Genres`);
       return sorted.length > 0;
     }
+
+    function round2(n) { return Math.round((n || 0) * 100) / 100; }
 
     // Alte Funktionsnamen für Rückwärtskompatibilität
     async function loadSpotifyTopTracks() {
@@ -2442,16 +2657,29 @@
     // Eigenen Member für aktuelle Party in Supabase anlegen/updaten
     async function upsertSelfAsMember(partyId) {
       if (!sbClient || !state.user.id) return;
+      const audioMap = state.user.audioMap || new Map();
+      const artistGenres = state.user.artistGenreMap || new Map();
+
       // Schlanke Track-Repräsentation mitgeben – 150 reichen für Matching
       const myTracks = (state.user.tracks || []).slice(0, 150).map(e => {
         const t = e.track;
+        const af = audioMap.get(t.id) || null;
+        // Genres der ersten paar Artists (dedup)
+        const trackGenres = [];
+        (t.artists || []).forEach(a => {
+          const gs = a.id ? artistGenres.get(a.id) : null;
+          if (gs) gs.forEach(g => { if (!trackGenres.includes(g)) trackGenres.push(g); });
+        });
         return {
           id: t.id,
+          uri: t.uri || (t.id ? `spotify:track:${t.id}` : null),
           name: t.name,
           artists: (t.artists || []).map(a => a.name),
           image: t.album && t.album.images && t.album.images[0] ? t.album.images[0].url : null,
           url: t.external_urls && t.external_urls.spotify,
-          score: Math.round(e.score * 100) / 100
+          score: Math.round(e.score * 100) / 100,
+          af: af,              // {en,da,va,ac,te} – klein gehalten
+          g: trackGenres.slice(0, 5)
         };
       });
       const payload = {
@@ -2460,7 +2688,13 @@
         display_name: state.user.name,
         avatar_url: state.user.avatarUrl || null,
         service: "spotify",
-        tracks: myTracks
+        tracks: myTracks,
+        // Top-Level Felder für schnelles Matching in der party_members-Zeile
+        // Müssen per Migration existieren; wenn nicht, fällt Supabase auf Ignore dieser Keys zurück.
+        profile: {
+          audio: state.user.audioProfile || null,
+          genres: (state.user.topGenres || []).slice(0, 10)
+        }
       };
       const { error } = await sbClient
         .from("party_members")
@@ -2470,15 +2704,23 @@
 
     async function createPartyInSupabase(code, name, emoji) {
       if (!sbClient || !state.user.id) return null;
-      const { data, error } = await sbClient
+      const payload = {
+        code, name, emoji,
+        host_id: state.user.id,
+        host_name: state.user.name,
+        mood: state.partyMood || "Gemischt"
+      };
+      let { data, error } = await sbClient
         .from("parties")
-        .insert({
-          code, name, emoji,
-          host_id: state.user.id,
-          host_name: state.user.name
-        })
+        .insert(payload)
         .select()
         .single();
+      // Fallback falls Spalte mood noch nicht existiert
+      if (error && /column.*mood/i.test(error.message || "")) {
+        delete payload.mood;
+        const retry = await sbClient.from("parties").insert(payload).select().single();
+        data = retry.data; error = retry.error;
+      }
       if (error) {
         console.error("[Crowdtune] create party failed", error);
         showToast("Event konnte nicht gespeichert werden");
@@ -2560,11 +2802,65 @@
     }
 
     // Echte Überschneidungs-Berechnung aus allen Members
+    // Audio-Feature-Profile für Moods (als Zielvektoren zum Matching)
+    const MOOD_PROFILES = {
+      "Tanzbar":  { en: 0.75, da: 0.80, va: 0.70, ac: 0.15, te: 122, genres: ["dance","house","disco","edm","electronic","pop"] },
+      "Chill":    { en: 0.35, da: 0.45, va: 0.45, ac: 0.55, te:  95, genres: ["chill","indie","lo-fi","ambient","acoustic"] },
+      "Rock":     { en: 0.80, da: 0.50, va: 0.55, ac: 0.10, te: 130, genres: ["rock","alt","metal","punk","indie rock","grunge"] },
+      "Hip-Hop":  { en: 0.70, da: 0.75, va: 0.55, ac: 0.15, te:  95, genres: ["hip hop","rap","trap","r&b"] },
+      "Elektro":  { en: 0.80, da: 0.80, va: 0.55, ac: 0.08, te: 125, genres: ["electronic","techno","house","edm","deep house"] },
+      "Gemischt": null
+    };
+
+    // Ähnlichkeit zwischen zwei audio-features (0..1; höher = ähnlicher)
+    function audioSimilarity(a, b) {
+      if (!a || !b) return 0;
+      // Kleine Fehler-Quadrate mit Gewichten. Tempo in bpm auf 0..1 normalisiert mit /200.
+      const d = (a.en - b.en) ** 2 * 1.2
+              + (a.da - b.da) ** 2 * 1.2
+              + (a.va - b.va) ** 2 * 0.8
+              + (a.ac - b.ac) ** 2 * 0.6
+              + ((a.te - b.te) / 200) ** 2 * 0.6;
+      return Math.max(0, 1 - d); // 1 = identisch
+    }
+
     function buildTracksFromSupabase() {
       const members = state.partyMembers || [];
       if (members.length < 1) return null;
 
-      // id → { track, memberIndices: [], totalScore }
+      // Profile aller Mitglieder einsammeln (wenn vorhanden)
+      const memberProfiles = members.map(m => (m.profile && m.profile.audio) || null);
+      const memberGenres = members.map(m => new Set(((m.profile && m.profile.genres) || []).map(g => (g || "").toLowerCase())));
+      const memberCount = members.length;
+
+      // Party-Audio-Profil = Durchschnitt aller Mitglieder (nur wenn mindestens 1 existiert)
+      const valid = memberProfiles.filter(Boolean);
+      const partyProfile = valid.length ? {
+        en: round2(valid.reduce((s, p) => s + p.en, 0) / valid.length),
+        da: round2(valid.reduce((s, p) => s + p.da, 0) / valid.length),
+        va: round2(valid.reduce((s, p) => s + p.va, 0) / valid.length),
+        ac: round2(valid.reduce((s, p) => s + p.ac, 0) / valid.length),
+        te: Math.round(valid.reduce((s, p) => s + (p.te || 0), 0) / valid.length)
+      } : null;
+
+      const mood = (state.party && state.party.mood) || state.partyMood || "Gemischt";
+      const moodProfile = MOOD_PROFILES[mood] || null;
+
+      // Zielprofil mischen: 70 % Party + 30 % Mood, wenn Mood gesetzt
+      let target = partyProfile;
+      if (partyProfile && moodProfile) {
+        target = {
+          en: round2(partyProfile.en * 0.7 + moodProfile.en * 0.3),
+          da: round2(partyProfile.da * 0.7 + moodProfile.da * 0.3),
+          va: round2(partyProfile.va * 0.7 + moodProfile.va * 0.3),
+          ac: round2(partyProfile.ac * 0.7 + moodProfile.ac * 0.3),
+          te: Math.round(partyProfile.te * 0.7 + moodProfile.te * 0.3)
+        };
+      } else if (moodProfile && !partyProfile) {
+        target = moodProfile;
+      }
+
+      // id → alle Daten + Matching-Metriken
       const combined = new Map();
       members.forEach((m, memberIdx) => {
         (m.tracks || []).forEach(t => {
@@ -2572,10 +2868,14 @@
           let entry = combined.get(t.id);
           if (!entry) {
             entry = {
-              id: t.id, name: t.name,
+              id: t.id,
+              uri: t.uri || `spotify:track:${t.id}`,
+              name: t.name,
               artists: t.artists || [],
               image: t.image,
               url: t.url,
+              af: t.af || null,
+              g: (t.g || []).map(x => (x || "").toLowerCase()),
               memberIndices: new Set(),
               totalScore: 0
             };
@@ -2583,36 +2883,73 @@
           }
           entry.memberIndices.add(memberIdx);
           entry.totalScore += (t.score || 0.5);
+          // Falls ein späteres Member mehr Infos hat, ergänzen
+          if (!entry.af && t.af) entry.af = t.af;
+          if (t.g && t.g.length && (!entry.g || !entry.g.length)) entry.g = t.g.map(x => (x || "").toLowerCase());
         });
       });
 
-      // Sortierung: viele Matches > hoher Gesamtscore
-      const arr = [...combined.values()].sort((a, b) => {
-        const ma = a.memberIndices.size, mb = b.memberIndices.size;
-        if (mb !== ma) return mb - ma;
-        return b.totalScore - a.totalScore;
+      if (!combined.size) return null;
+
+      // Scoring pro Track
+      const scored = [...combined.values()].map(t => {
+        const matches = t.memberIndices.size;
+        const ratio = matches / memberCount;
+
+        // Basis: Überschneidung und Gesamtscore
+        let score = ratio * 60 + Math.min(30, t.totalScore * 3.2);
+
+        // Audio-Kohärenz: wie gut passt der Track zum Party/Mood-Zielprofil?
+        let cohPct = null;
+        if (target && t.af) {
+          const sim = audioSimilarity(t.af, target);
+          cohPct = Math.round(sim * 100);
+          score += sim * 18; // bis zu +18
+        }
+
+        // Genre-Overlap: wie viele Member haben mind. ein gemeinsames Genre mit dem Track?
+        if (t.g && t.g.length) {
+          let overlapMembers = 0;
+          memberGenres.forEach(gs => {
+            if (!gs.size) return;
+            if (t.g.some(g => gs.has(g))) overlapMembers++;
+          });
+          const gRatio = overlapMembers / memberCount;
+          score += gRatio * 12;
+        }
+
+        // Mood-Genre-Match: wenn Mood gesetzt, Bonus für Genres aus dem Mood
+        if (moodProfile && moodProfile.genres && t.g && t.g.length) {
+          const hit = t.g.some(g => moodProfile.genres.some(mg => g.includes(mg)));
+          if (hit) score += 8;
+        }
+
+        // Minimum-Match-Filter: wenn es mindestens 3 Member gibt, bevorzuge >= 2 Matches
+        if (memberCount >= 3 && matches < 2) score *= 0.6;
+
+        const pctDisplay = Math.min(98, Math.max(52, Math.round(score)));
+        return { t, matches, score, pctDisplay, cohPct };
       });
 
-      if (!arr.length) return null;
-
-      const topN = arr.slice(0, 15);
-      const memberCount = members.length;
-      return topN.map((t) => {
-        const matches = [...t.memberIndices];
-        // Prozent = (Anteil Matches) * 60 + Score-Bonus, gecappt auf 98
-        const ratio = matches.length / memberCount;
-        const pct = Math.min(98, Math.max(50, Math.round(ratio * 70 + Math.min(28, t.totalScore * 4))));
-        return {
-          title: t.name,
-          artist: (t.artists || []).join(", "),
-          image: t.image,
-          gradient: "linear-gradient(135deg,#6366f1,#8b5cf6)",
-          art: "🎵",
-          match: matches,
-          pct,
-          spotifyUrl: t.url
-        };
+      // Sortierung: am Zielprofil ausgerichteter, meistgeteilter Score
+      scored.sort((a, b) => {
+        if (b.matches !== a.matches && memberCount > 1) return b.matches - a.matches;
+        return b.score - a.score;
       });
+
+      const topN = scored.slice(0, 18);
+      return topN.map(({ t, pctDisplay, cohPct }) => ({
+        title: t.name,
+        artist: (t.artists || []).join(", "),
+        image: t.image,
+        gradient: "linear-gradient(135deg,#6366f1,#8b5cf6)",
+        art: "🎵",
+        match: [...t.memberIndices],
+        pct: pctDisplay,
+        coh: cohPct,
+        uri: t.uri,
+        spotifyUrl: t.url
+      }));
     }
 
     async function initSpotify() {
@@ -2672,8 +3009,11 @@
       const name = document.getElementById("new-party-name").value.trim() || "Saturday Night";
       const emojiEl = document.querySelector("#emoji-picker .selected");
       const emoji = emojiEl ? emojiEl.dataset.emoji : "🎉";
+      const moodEl = document.querySelector(".mood-picker button.selected");
+      const mood = moodEl ? (moodEl.dataset.mood || "Gemischt") : "Gemischt";
       state.partyName = name;
       state.partyEmoji = emoji;
+      state.partyMood = mood;
       state.currentCode = generateCode();
 
       document.getElementById("party-name").textContent = name;
@@ -2748,6 +3088,7 @@
         state.isHost = (party.host_id === state.user.id);
         state.partyName = party.name;
         state.partyEmoji = party.emoji || "🎉";
+        state.partyMood = party.mood || state.partyMood || "Gemischt";
         document.getElementById("party-name").textContent = party.name;
         document.getElementById("party-emoji").textContent = party.emoji || "🎉";
         await upsertSelfAsMember(party.id);
@@ -2886,6 +3227,132 @@
       svg.innerHTML = html;
     }
 
+    // ============ Spotify Connect Playback ============
+    // Holt aktive Geräte des Users
+    async function getSpotifyDevices() {
+      try {
+        const res = await spotifyApi("/me/player/devices");
+        return (res && res.devices) || [];
+      } catch (e) { console.error("[Crowdtune] devices failed", e); return []; }
+    }
+
+    // Erzeugt eine Playlist im Host-Account und füllt sie mit Tracks
+    async function createSpotifyPlaylist(trackUris) {
+      if (!trackUris.length) return null;
+      const userId = state.user && state.user.id;
+      if (!userId) { showToast("Spotify-User unbekannt"); return null; }
+
+      // 1) Playlist anlegen
+      const name = state.partyName ? `Crowdtune · ${state.partyName}` : "Crowdtune Mix";
+      const desc = `Gemeinsamer Mix für ${state.guests.length} Personen${state.partyMood ? ` · ${state.partyMood}` : ""} · via Crowdtune`;
+      const created = await spotifyApi(`/users/${encodeURIComponent(userId)}/playlists`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, description: desc, public: false })
+      });
+      if (!created || !created.id) return null;
+
+      // 2) Tracks in Batches zu 100 anhängen
+      for (let i = 0; i < trackUris.length; i += 100) {
+        await spotifyApi(`/playlists/${created.id}/tracks`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ uris: trackUris.slice(i, i + 100) })
+        });
+      }
+      return created;
+    }
+
+    // Startet Playback auf einem Gerät (erstes aktives oder explizit gewähltes)
+    async function startPlaybackOnDevice(deviceId, contextUri) {
+      const url = "/me/player/play" + (deviceId ? `?device_id=${deviceId}` : "");
+      await spotifyApi(url, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ context_uri: contextUri })
+      });
+    }
+
+    let lastPlaylist = null;
+
+    async function playMixOnSpotify() {
+      const btn = document.getElementById("play-on-spotify-btn");
+      const label = document.getElementById("play-on-spotify-label");
+      const hint = document.getElementById("playback-hint");
+      if (!spotifyConfigured() || !localStorage.getItem("ct_access")) {
+        showToast("Bitte mit Spotify einloggen");
+        return;
+      }
+      if (!state.currentMix || !state.currentMix.length) {
+        showToast("Kein Mix vorhanden");
+        return;
+      }
+      const uris = state.currentMix.map(t => t.uri).filter(Boolean);
+      if (!uris.length) { showToast("Keine abspielbaren Tracks"); return; }
+
+      btn.disabled = true;
+      label.textContent = "Lade Geräte…";
+      hint.textContent = "";
+
+      try {
+        // 1) Devices prüfen
+        const devices = await getSpotifyDevices();
+        if (!devices.length) {
+          label.textContent = "Auf Anlage abspielen";
+          btn.disabled = false;
+          hint.innerHTML = "⚠️ Kein aktives Spotify-Gerät. Öffne Spotify auf deiner Box / Handy und versuch's nochmal.";
+          return;
+        }
+
+        // 2) Playlist erzeugen (wenn noch nicht geschehen)
+        if (!lastPlaylist || lastPlaylist._forMix !== state.currentMix) {
+          label.textContent = "Erstelle Playlist…";
+          const playlist = await createSpotifyPlaylist(uris);
+          if (!playlist) {
+            label.textContent = "Auf Anlage abspielen";
+            btn.disabled = false;
+            hint.textContent = "Playlist konnte nicht erstellt werden.";
+            return;
+          }
+          playlist._forMix = state.currentMix;
+          lastPlaylist = playlist;
+        }
+
+        // 3) Abspielen – bevorzugt das aktive Gerät
+        const active = devices.find(d => d.is_active) || devices[0];
+        label.textContent = `Spielt auf ${active.name}…`;
+        await startPlaybackOnDevice(active.id, lastPlaylist.uri);
+        hint.innerHTML = `▶️ Läuft auf <strong>${active.name}</strong> · <a href="#" onclick="event.preventDefault(); openPlaylistOnSpotify()">Playlist öffnen</a>`;
+        setTimeout(() => {
+          label.textContent = "Auf Anlage abspielen";
+          btn.disabled = false;
+        }, 1500);
+      } catch (e) {
+        console.error("[Crowdtune] playback failed", e);
+        label.textContent = "Auf Anlage abspielen";
+        btn.disabled = false;
+        const msg = (e && e.message) || "";
+        if (/premium/i.test(msg)) {
+          hint.innerHTML = "⚠️ Spotify Connect benötigt ein aktives Premium-Abo.";
+        } else if (/device/i.test(msg)) {
+          hint.innerHTML = "⚠️ Kein aktives Gerät gefunden. Spotify-App öffnen und Song kurz anspielen.";
+        } else {
+          hint.textContent = "Abspielen fehlgeschlagen: " + msg;
+        }
+      }
+    }
+
+    function openPlaylistOnSpotify() {
+      if (lastPlaylist && lastPlaylist.external_urls && lastPlaylist.external_urls.spotify) {
+        window.open(lastPlaylist.external_urls.spotify, "_blank");
+        return;
+      }
+      // Fallback: ersten Track öffnen, damit man zumindest in Spotify landet
+      const first = (state.currentMix || [])[0];
+      if (first && first.spotifyUrl) window.open(first.spotifyUrl, "_blank");
+      else showToast("Noch keine Playlist erzeugt — bitte zuerst abspielen");
+    }
+
     // ============ Generating Animation ============
     function startGenerating() {
       if (state.guests.length < 2) { showToast("Mindestens 2 Personen nötig"); return; }
@@ -2925,13 +3392,24 @@
 
     // ============ Result ============
     function buildTracksFromSpotify() {
-      // Nimm bis zu 15 echte Top-Tracks und "simuliere" die Matches der anderen Gäste.
-      // Phase 2b (echte Gäste-Tracks) kommt mit Backend.
-      const items = (state.user.topTracks || []).slice(0, 15);
-      if (!items.length) return null;
+      // Solo-Fallback: Mischt Top-Tracks mit Mood-Filter wenn gesetzt
+      const all = state.user.tracks || [];
+      if (!all.length) return null;
+      const audioMap = state.user.audioMap || new Map();
+      const mood = state.partyMood || "Gemischt";
+      const moodProfile = MOOD_PROFILES[mood];
+
+      const scored = all.map(e => {
+        const t = e.track;
+        const af = audioMap.get(t.id);
+        let s = e.score;
+        if (moodProfile && af) s += audioSimilarity(af, moodProfile) * 0.8;
+        return { t, s };
+      }).sort((a, b) => b.s - a.s);
+
+      const items = scored.slice(0, 18).map(e => e.t);
       const guestCount = Math.max(2, state.guests.length);
       return items.map((t, i) => {
-        // Plausible Match-Verteilung: Platz 1 matcht bei allen, später weniger
         const matchCount = Math.max(2, guestCount - Math.floor(i / 4));
         const match = Array.from({length: matchCount}, (_, k) => k);
         const pct = Math.max(58, 98 - i * 3);
@@ -2944,6 +3422,7 @@
           art: "🎵",
           match,
           pct,
+          uri: t.uri || (t.id ? `spotify:track:${t.id}` : null),
           spotifyUrl: t.external_urls && t.external_urls.spotify
         };
       });
@@ -2957,6 +3436,8 @@
 
       // Priorität: echte Multi-User-Überschneidungen aus Supabase → Solo-Tracks aus Spotify → Mock
       const tracks = buildTracksFromSupabase() || buildTracksFromSpotify() || MOCK_TRACKS;
+      state.currentMix = tracks;
+      lastPlaylist = null; // Für diesen Mix noch keine Playlist erzeugt
       const list = document.getElementById("track-list");
       list.innerHTML = tracks.map((t, i) => {
         const matchAvatars = (t.match || []).slice(0, 4).map(idx => {
