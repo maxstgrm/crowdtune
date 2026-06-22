@@ -1010,7 +1010,7 @@
 </head>
 <body>
   <!-- DEBUG: sichtbarer Versions-Stempel, damit wir Cache-Probleme sofort erkennen -->
-  <div id="ct-version-stamp" style="position:fixed;top:4px;left:4px;z-index:99998;font:600 10px -apple-system,sans-serif;color:#fff;background:rgba(99,102,241,0.9);padding:3px 8px;border-radius:8px;pointer-events:none;">Crowdtune v20 • spotifyApi-Options</div>
+  <div id="ct-version-stamp" style="position:fixed;top:4px;left:4px;z-index:99998;font:600 10px -apple-system,sans-serif;color:#fff;background:rgba(99,102,241,0.9);padding:3px 8px;border-radius:8px;pointer-events:none;">Crowdtune v21 • Münster/Dockland-Clubs</div>
 
   <!-- Auth-Loading-Overlay (wird nur gezeigt wenn wir gerade von Spotify zurückkommen) -->
   <div id="ct-auth-loading" style="display:none;position:fixed;inset:0;z-index:99997;background:linear-gradient(135deg,#0f0f1e 0%,#1a1a2e 50%,#2a1a3e 100%);display:none;align-items:center;justify-content:center;flex-direction:column;gap:24px;color:#fff;font:500 16px -apple-system,BlinkMacSystemFont,sans-serif;">
@@ -1136,8 +1136,19 @@
           </div>
         </div>
         <div class="form-group">
-          <label>Ort (optional)</label>
-          <input type="text" class="form-input" placeholder="z.B. Bei Max" />
+          <label>Stadt</label>
+          <input type="text" class="form-input" id="new-party-city" value="Münster" readonly style="opacity:.6;cursor:default;" />
+        </div>
+        <div class="form-group">
+          <label>Location</label>
+          <select class="form-input" id="new-party-location" style="appearance:none;-webkit-appearance:none;background-image:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%228%22 viewBox=%220 0 12 8%22><path d=%22M1 1l5 5 5-5%22 stroke=%22%23fff%22 stroke-width=%221.5%22 fill=%22none%22 stroke-linecap=%22round%22/></svg>');background-repeat:no-repeat;background-position:right 14px center;padding-right:36px;">
+            <option value="">— Kein Club (privat) —</option>
+            <option value="Fusion Club">Fusion Club</option>
+            <option value="Jovel Music Hall">Jovel Music Hall</option>
+            <option value="Odeon">Odeon</option>
+            <option value="Elephant Club">Elephant Club</option>
+            <option value="Gleiss 22">Gleiss 22</option>
+          </select>
         </div>
         <div class="form-group">
           <label>Mix-Stimmung</label>
@@ -3030,14 +3041,19 @@
       const emoji = emojiEl ? emojiEl.dataset.emoji : "🎉";
       const moodEl = document.querySelector(".mood-picker button.selected");
       const mood = moodEl ? (moodEl.dataset.mood || "Gemischt") : "Gemischt";
+      const locationEl = document.getElementById("new-party-location");
+      const location = locationEl ? locationEl.value : "";
       state.partyName = name;
       state.partyEmoji = emoji;
       state.partyMood = mood;
+      state.partyLocation = location;
       state.currentCode = generateCode();
 
       document.getElementById("party-name").textContent = name;
       document.getElementById("party-emoji").textContent = emoji;
       document.getElementById("code-text").textContent = state.currentCode;
+      const metaEl = document.querySelector(".party-meta");
+      if (metaEl) metaEl.textContent = location ? "Münster · " + location : "Münster";
 
       // Lokal speichern, damit das Event bei „Deine Events" auftaucht
       myEventsAdd({
