@@ -1010,7 +1010,7 @@
 </head>
 <body>
   <!-- DEBUG: sichtbarer Versions-Stempel, damit wir Cache-Probleme sofort erkennen -->
-  <div id="ct-version-stamp" style="position:fixed;top:4px;left:4px;z-index:99998;font:600 10px -apple-system,sans-serif;color:#fff;background:rgba(99,102,241,0.9);padding:3px 8px;border-radius:8px;pointer-events:none;">Crowdtune v21 • Münster/Dockland-Clubs</div>
+  <div id="ct-version-stamp" style="position:fixed;top:4px;left:4px;z-index:99998;font:600 10px -apple-system,sans-serif;color:#fff;background:rgba(99,102,241,0.9);padding:3px 8px;border-radius:8px;pointer-events:none;">Crowdtune v22 • Dockland-Münster komplett</div>
 
   <!-- Auth-Loading-Overlay (wird nur gezeigt wenn wir gerade von Spotify zurückkommen) -->
   <div id="ct-auth-loading" style="display:none;position:fixed;inset:0;z-index:99997;background:linear-gradient(135deg,#0f0f1e 0%,#1a1a2e 50%,#2a1a3e 100%);display:none;align-items:center;justify-content:center;flex-direction:column;gap:24px;color:#fff;font:500 16px -apple-system,BlinkMacSystemFont,sans-serif;">
@@ -1309,7 +1309,7 @@
     <section id="screen-events" class="screen">
       <header class="events-header">
         <h1 style="font-size: 28px; letter-spacing: -.02em;">Events</h1>
-        <p class="muted" style="font-size: 14px; margin-top: 4px;">Offizielle Events in deiner Nähe</p>
+        <p class="muted" style="font-size: 14px; margin-top: 4px;">Dockland-Clubs in Münster — heute & demnächst</p>
       </header>
       <div class="events-tabs" id="events-tabs">
         <button class="active" data-filter="nearby">In der Nähe</button>
@@ -1624,47 +1624,47 @@
       }
     ];
 
-    // Mock-Händler im Event-Kontext, Format "Event @ Venue"
+    // Mock-Händler — Events der Dockland-GmbH-Clubs in Münster
     const MOCK_MERCHANTS = [
-      { name: "Rooftop Session @ Waxy's",      logo: "🌆" },
-      { name: "Friday Floor @ Watergate",      logo: "🌊" },
-      { name: "Indie Night @ Lido",            logo: "🎸" },
-      { name: "Saturday Marathon @ Kater Blau",logo: "🐱" },
-      { name: "Sunset Beach @ Müggelsee",      logo: "🏖️" },
-      { name: "Techno All-Nighter @ about:blank", logo: "⚫" },
-      { name: "Full-Moon-Rave @ Sisyphos",     logo: "🌀" },
-      { name: "HipHop Show @ Festsaal",        logo: "🎤" },
-      { name: "Pop Night @ SchwuZ",            logo: "🌈" },
-      { name: "Sommer Opening @ Sage Beach",   logo: "🏝️" },
-      { name: "Open Decks @ Klunkerkranich",   logo: "🏙️" }
+      { name: "Saturday Night Fusion @ Fusion Club", logo: "🎛️" },
+      { name: "Techno Floor @ Fusion Club",          logo: "⚫" },
+      { name: "Garden Sessions @ Fade",              logo: "🌿" },
+      { name: "Indie & Pop Night @ Fade",            logo: "🎸" },
+      { name: "House & Classics @ Heaven",           logo: "💿" },
+      { name: "After Hours @ Heaven",                logo: "🌙" },
+      { name: "Sunset Open Air @ Dockland",          logo: "🌅" },
+      { name: "Docklands Festival @ Hawerkamp",      logo: "🎉" },
+      { name: "Open Decks @ Fade",                   logo: "🎚️" },
+      { name: "Resident Night @ Fusion Club",        logo: "🎧" }
     ];
 
-    const LOYALTY_STORAGE_KEY = "ct_loyalty_v2"; // Key-Bump verwirft alte v13-Demo (Späti/Burger)
+    const LOYALTY_STORAGE_KEY = "ct_loyalty_v3"; // v3-Bump: Demo auf Dockland-Clubs in Münster
     function loyaltyRead() {
       try {
         const raw = localStorage.getItem(LOYALTY_STORAGE_KEY);
         if (raw) return JSON.parse(raw);
-        // Alten Key aufräumen, falls vorhanden
+        // Alte Keys aufräumen, falls vorhanden
         localStorage.removeItem("ct_loyalty");
+        localStorage.removeItem("ct_loyalty_v2");
       } catch(e) {}
-      // Initial-Demo-History: Events im Format „Event @ Venue"
+      // Initial-Demo-History: Bezahlungen auf Dockland-Events in Münster
       const now = Date.now();
       const day = 86400000;
       const demo = {
         points: 1340,
         history: [
-          { id:  1, merchant: "Rooftop Session @ Waxy's",       logo: "🌆", amount: 12.50, points: 25, ts: now - day*1,  method: "nfc" },
-          { id:  2, merchant: "Rooftop Session @ Waxy's",       logo: "🌆", amount:  6.80, points: 14, ts: now - day*1,  method: "nfc" },
-          { id:  3, merchant: "Friday Floor @ Watergate",       logo: "🌊", amount: 18.00, points: 36, ts: now - day*3,  method: "qr" },
-          { id:  4, merchant: "Friday Floor @ Watergate",       logo: "🌊", amount:  9.50, points: 19, ts: now - day*3,  method: "nfc" },
-          { id:  5, merchant: "Indie Night @ Lido",             logo: "🎸", amount: 24.50, points: 49, ts: now - day*6,  method: "qr" },
-          { id:  6, merchant: "Saturday Marathon @ Kater Blau", logo: "🐱", amount: 15.00, points: 30, ts: now - day*9,  method: "nfc" },
-          { id:  7, merchant: "Sunset Beach @ Müggelsee",       logo: "🏖️", amount: 22.00, points: 44, ts: now - day*14, method: "qr" },
-          { id:  8, merchant: "Techno All-Nighter @ about:blank", logo: "⚫", amount: 11.00, points: 22, ts: now - day*18, method: "nfc" },
-          { id:  9, merchant: "Full-Moon-Rave @ Sisyphos",      logo: "🌀", amount: 28.00, points: 56, ts: now - day*24, method: "qr" },
-          { id: 10, merchant: "HipHop Show @ Festsaal",         logo: "🎤", amount: 13.50, points: 27, ts: now - day*30, method: "nfc" },
-          { id: 11, merchant: "Pop Night @ SchwuZ",             logo: "🌈", amount:  8.00, points: 16, ts: now - day*38, method: "qr" },
-          { id: 12, merchant: "Open Decks @ Klunkerkranich",    logo: "🏙️", amount: 19.50, points: 39, ts: now - day*45, method: "nfc" }
+          { id:  1, merchant: "Saturday Night Fusion @ Fusion Club", logo: "🎛️", amount: 12.50, points: 25, ts: now - day*1,  method: "nfc" },
+          { id:  2, merchant: "Saturday Night Fusion @ Fusion Club", logo: "🎛️", amount:  6.80, points: 14, ts: now - day*1,  method: "nfc" },
+          { id:  3, merchant: "Garden Sessions @ Fade",              logo: "🌿", amount: 18.00, points: 36, ts: now - day*3,  method: "qr" },
+          { id:  4, merchant: "Garden Sessions @ Fade",              logo: "🌿", amount:  9.50, points: 19, ts: now - day*3,  method: "nfc" },
+          { id:  5, merchant: "House & Classics @ Heaven",           logo: "💿", amount: 24.50, points: 49, ts: now - day*6,  method: "qr" },
+          { id:  6, merchant: "Techno Floor @ Fusion Club",          logo: "⚫", amount: 15.00, points: 30, ts: now - day*9,  method: "nfc" },
+          { id:  7, merchant: "Sunset Open Air @ Dockland",          logo: "🌅", amount: 22.00, points: 44, ts: now - day*14, method: "qr" },
+          { id:  8, merchant: "After Hours @ Heaven",                logo: "🌙", amount: 11.00, points: 22, ts: now - day*18, method: "nfc" },
+          { id:  9, merchant: "Resident Night @ Fusion Club",        logo: "🎧", amount: 28.00, points: 56, ts: now - day*24, method: "qr" },
+          { id: 10, merchant: "Indie & Pop Night @ Fade",            logo: "🎸", amount: 13.50, points: 27, ts: now - day*30, method: "nfc" },
+          { id: 11, merchant: "Open Decks @ Fade",                   logo: "🎚️", amount:  8.00, points: 16, ts: now - day*38, method: "qr" },
+          { id: 12, merchant: "Docklands Festival @ Hawerkamp",      logo: "🎉", amount: 19.50, points: 39, ts: now - day*45, method: "nfc" }
         ]
       };
       return demo;
@@ -2139,41 +2139,56 @@
     }
 
     // ============ Events ============
+    // Dockland-GmbH-Locations in Münster: Fusion Club, Fade, Heaven, Dockland Open Air
     const MOCK_EVENTS = [
       {
-        id: "e1", title: "Berlin Rooftop Sessions",
-        when: "Heute · 21:00", where: "Klunkerkranich, Berlin",
-        tag: "live", distance: "2.3 km",
+        id: "e1", title: "Saturday Night Fusion",
+        when: "Heute · 23:00", where: "Fusion Club, Am Hawerkamp",
+        tag: "live", distance: "1.8 km",
         gradient: "linear-gradient(135deg,#6366f1,#8a2be2 60%,#3b82f6)",
-        emoji: "🌆", attendees: 284, avatars: [0,1,2,3]
+        emoji: "🎛️", attendees: 312, avatars: [0,1,2,3]
       },
       {
-        id: "e2", title: "Sunset Beach Party",
-        when: "Samstag · 19:30", where: "Müggelsee Strandbad",
-        tag: "upcoming", distance: "12 km",
-        gradient: "linear-gradient(135deg,#0ea5e9,#3b82f6 50%,#6366f1)",
-        emoji: "🏖️", attendees: 142, avatars: [1,2,3,0]
+        id: "e2", title: "Garden Sessions @ Fade",
+        when: "Freitag · 22:00", where: "Fade Club, Hawerkamp",
+        tag: "upcoming", distance: "1.9 km",
+        gradient: "linear-gradient(135deg,#10b981,#06b6d4 60%,#3b82f6)",
+        emoji: "🌿", attendees: 184, avatars: [1,2,3,0]
       },
       {
-        id: "e3", title: "Indie Night @ Lido",
-        when: "Fr, 24. April · 22:00", where: "Lido, Kreuzberg",
-        tag: "upcoming", distance: "4.1 km",
-        gradient: "linear-gradient(135deg,#7c3aed,#a78bfa 80%)",
-        emoji: "🎸", attendees: 67, avatars: [2,3,0]
+        id: "e3", title: "House & Classics",
+        when: "Sa, 28. Juni · 22:00", where: "Heaven, Hafenweg",
+        tag: "upcoming", distance: "0.9 km",
+        gradient: "linear-gradient(135deg,#ec4899,#8b5cf6 70%,#6366f1)",
+        emoji: "💿", attendees: 126, avatars: [2,3,0]
       },
       {
-        id: "e4", title: "Techno Underground",
-        when: "Sa, 25. April · 23:00", where: "://about blank",
-        tag: "upcoming", distance: "6.8 km",
+        id: "e4", title: "Sunset Open Air",
+        when: "So, 29. Juni · 16:00", where: "Dockland, Hafenweg",
+        tag: "upcoming", distance: "1.1 km",
+        gradient: "linear-gradient(135deg,#f59e0b,#ef4444 70%,#8a2be2)",
+        emoji: "🌅", attendees: 421, avatars: [0,2,1,3]
+      },
+      {
+        id: "e5", title: "Techno Floor — Resident Night",
+        when: "Fr, 4. Juli · 23:30", where: "Fusion Club, Am Hawerkamp",
+        tag: "upcoming", distance: "1.8 km",
         gradient: "linear-gradient(135deg,#1e1b4b,#4f46e5 70%,#8b5cf6)",
-        emoji: "🎛️", attendees: 512, avatars: [0,2,1,3]
+        emoji: "⚫", attendees: 258, avatars: [0,1,3]
       },
       {
-        id: "e5", title: "Sonntags-Brunch mit DJ",
-        when: "So, 26. April · 12:00", where: "House of Weekend",
-        tag: "upcoming", distance: "1.2 km",
-        gradient: "linear-gradient(135deg,#8b5cf6,#06b6d4 80%)",
-        emoji: "☀️", attendees: 89, avatars: [1,3]
+        id: "e6", title: "Indie & Pop Night",
+        when: "Sa, 5. Juli · 22:00", where: "Fade Club, Hawerkamp",
+        tag: "upcoming", distance: "1.9 km",
+        gradient: "linear-gradient(135deg,#7c3aed,#a78bfa 80%)",
+        emoji: "🎸", attendees: 95, avatars: [1,3]
+      },
+      {
+        id: "e7", title: "Docklands Festival — Warm-Up",
+        when: "Fr, 11. Juli · 20:00", where: "Hawerkamp · alle Floors",
+        tag: "upcoming", distance: "1.8 km",
+        gradient: "linear-gradient(135deg,#0ea5e9,#3b82f6 50%,#6366f1)",
+        emoji: "🎉", attendees: 612, avatars: [0,2,3,1]
       }
     ];
 
